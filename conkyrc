@@ -1,0 +1,45 @@
+conky.config = {
+    xinerama_head = 1,
+    alignment = 'top_left',
+    gap_x = 0,
+    gap_y = 0,
+
+    own_window = true,
+    own_window_type = 'normal',
+    own_window_transparent = false,
+    own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+    own_window_argb_visual = true,
+    own_window_argb_value = 255,
+    own_window_colour = '0d1117',
+
+    minimum_width = 1100,
+    minimum_height = 3840,
+    maximum_width = 1100,
+
+    use_xft = true,
+    font = 'DejaVu Sans:size=18',
+    override_utf8_locale = true,
+
+    update_interval = 2,
+
+    draw_shades = false,
+    draw_outline = false,
+    draw_borders = false,
+    double_buffer = true,
+    border_inner_margin = 0,
+
+    default_color = 'c9d1d9',
+
+    cpu_avg_samples = 2,
+    net_avg_samples = 2,
+    no_buffers = true,
+    text_buffer_size = 2048,
+    short_units = true,
+
+    lua_load = '~/dashboard/rings.lua',
+    lua_draw_hook_post = 'conky_draw_dashboard',
+};
+
+conky.text = [[
+${image ~/dashboard/wallpaper.png -p 0,0 -s 1100x3840}${voffset 3840}
+]];
