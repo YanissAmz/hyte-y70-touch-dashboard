@@ -1,0 +1,15 @@
+[Unit]
+Description=HYTE Y70 Touch Web Dashboard
+After=graphical-session.target
+
+[Service]
+Type=simple
+Environment=DISPLAY=:0
+WorkingDirectory=/home/yaniss/dashboard
+ExecStart=/home/yaniss/dashboard/scripts/start.sh
+ExecStop=/bin/bash -c 'pkill -f "uvicorn backend.main"; pkill -f "chromium.*8070"'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

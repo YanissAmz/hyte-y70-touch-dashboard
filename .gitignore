@@ -3,3 +3,8 @@
 *~
 .claude/
 CLAUDE.md
+venv/
+__pycache__/
+*.pyc
+.chromium-data/
+wallpapers/current.png
