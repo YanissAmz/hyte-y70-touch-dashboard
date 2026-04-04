@@ -1,6 +1,6 @@
 # HYTE Y70 Touch Dashboard — Notes & Roadmap
 
-## Ce qui a été fait (2026-04-03)
+## Ce qui a été fait (2026-04-03 — initial)
 
 ### Backend (FastAPI + WebSocket)
 - **8 collectors temps réel** : CPU (psutil + k10temp), RAM, GPU (pynvml natif), Disk (I/O + NVMe temp), Network (SSID/signal/ping/speeds/WiFi scan/Tailscale), Weather (wttr.in cache 15min), Processes (top CPU + GPU), Ollama (API localhost:11434), System Info (hostname/uptime/kernel/docker)
@@ -49,27 +49,35 @@
 
 ## TODO — Prochaines étapes
 
-### Priorité haute
-- [ ] Tester avec TV HDMI-0 rebranchée (dual monitor)
-- [ ] Migrer `scripts/start.sh` pour utiliser `webview.py` au lieu de Chromium
-- [ ] Ajuster design Page 1 : spacing, tailles des éléments pour 1100x3840
-- [ ] Vérifier rendu de toutes les pages (réseau, processus, contrôles, système)
-- [ ] Wallpaper visible en fond (actuellement fond noir)
-- [ ] Installer `dashboard.service` systemd pour autostart
+### BLOQUANT — Touch cassé
+- [ ] **Le tactile ILITEK ne génère plus d'events X11** — `xinput test` ne reçoit rien quand on touche. Le device est listé (id 8/9), enabled, mais muet. Essayé : reset USB (`echo 0/1 > authorized`), reset xinput matrix → rien. Probablement besoin d'un reboot ou débranchement physique USB.
+- [ ] Après fix touch : remettre la matrice xinput : `xinput set-prop "ILITEK       ILITEK-TOUCH" "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1` (idem pour Mouse)
 
-### Fonctionnalités à ajouter
-- [ ] **Mode navigateur** : swipe-down depuis le haut → barre URL, back/forward, le HYTE devient un vrai browser
-- [ ] **Bouton Home flottant** : toujours visible, retour au dashboard
-- [ ] **Clavier virtuel** : `onboard` ou intégré, pour taper des URLs/passwords sur le tactile
-- [ ] **Lanceur d'apps** : page avec raccourcis (YouTube, Spotify, Grafana, etc.)
-- [ ] **Mode nuit** : cron pour éteindre l'écran la nuit, rallumer le matin
+### Fait (2026-04-04)
+- [x] Dual monitor : start.sh détecte HDMI-0 branché ou pas
+- [x] Migré start.sh/screen_on.sh/monitor_screen.sh de Chromium vers webview.py
+- [x] Layout Page 1 flex (remplit 3840px)
+- [x] Wallpaper fond visible (current.png auto-généré, overlay réduit)
+- [x] HiDPI canvas (devicePixelRatio dans charts.js)
+- [x] Navigation horizontale (swipe gauche/droite, loop, dots en bas)
+- [x] Systemd dashboard.service installé et enabled + linger
+- [x] Mode nuit cron (23h off, 7h on)
+- [x] screen.py gère HDMI-0 absent
+- [x] xinput rotation matrix dans start.sh pour ILITEK touch
+
+### À faire — LEDs
+- [ ] **LEDs ne marchent PAS via /dev/ttyACM0** — ce device (USB 3402:0c00) est le contrôleur ÉCRAN, pas LED. Protocole écran : `FF CC 01 [on/off] [brightness 0-100]`. Les LED strips sont sur header ARGB carte mère → utiliser **OpenRGB** (`sudo apt install openrgb`)
+- [ ] Intégrer OpenRGB dans le backend (API CLI ou SDK Python)
+- [ ] Remplacer le controller leds.py par des appels OpenRGB
+- [ ] Ajouter contrôle luminosité écran via protocole `FF CC 01`
+
+### À faire — Fonctionnalités
+- [ ] **Mode bureau** : bouton pour minimiser le webview → accès desktop Ubuntu sur le HYTE, retour auto après inactivité
+- [ ] Navigateur/apps : fichiers JS existent (browser.js, launcher.js, keyboard.js) mais retirés du HTML pour simplifier. Remettre quand le mode bureau sera en place — le HYTE comme écran secondaire normal est plus flexible qu'un navigateur intégré
 - [ ] **Widgets** : notifications, calendrier, musique en cours
-- [ ] **Swipe horizontal** entre dashboard et navigateur
 
 ### Polish
 - [ ] Animations de transition entre pages plus fluides
 - [ ] Graphes sparkline avec plus de style (gradient fill, points)
-- [ ] Indicateurs de connexion WiFi animés
 - [ ] Feedback tactile visuel sur les cards (ripple effect)
 - [ ] Thèmes (dark/light/custom)
-- [ ] Export/import de la config

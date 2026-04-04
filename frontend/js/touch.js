@@ -8,8 +8,6 @@ let track, pages;
 
 function resetInactivity() {
   clearTimeout(inactivityTimer);
-  // Don't auto-return when on browser or launcher page
-  if (currentPage >= totalPages - 2) return;
   inactivityTimer = setTimeout(() => goToPage(0), INACTIVITY_TIMEOUT);
 }
 
@@ -33,75 +31,110 @@ function updateDots() {
   });
 }
 
+function simulateTap(x, y) {
+  var el = document.elementFromPoint(x, y);
+  if (!el) return;
+
+  // Focus inputs
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+    el.focus();
+    el.click();
+    return;
+  }
+
+  // Walk up to find clickable parent
+  var target = el;
+  while (target && target !== document.body) {
+    if (target.dataset && target.dataset.link) {
+      navigateTo(target.dataset.link);
+      return;
+    }
+    if (target.tagName === 'BUTTON' || target.tagName === 'A' ||
+        target.hasAttribute('onclick') ||
+        target.classList.contains('led-preset') ||
+        target.classList.contains('wallpaper-thumb') ||
+        target.classList.contains('wifi-item') ||
+        target.classList.contains('dot') ||
+        target.classList.contains('control-btn') ||
+        target.id === 'home-btn') {
+      target.click();
+      return;
+    }
+    target = target.parentElement;
+  }
+  el.click();
+}
+
 function initTouch() {
   track = document.getElementById('page-track');
   pages = Array.from(track.querySelectorAll('.page'));
   totalPages = pages.length;
 
-  // Inactivity reset
   document.addEventListener('touchstart', resetInactivity, { passive: true });
-  document.addEventListener('click', resetInactivity);
 
-  // Swipe detection — only intercept horizontal swipes for page navigation
-  // Everything else (taps, vertical scroll, buttons) stays native
-  let startX = 0, startY = 0;
-  let decided = false, isHorizontal = false;
+  var startX = 0, startY = 0, lastY = 0;
+  var decided = false, isHorizontal = false, moved = false;
+  var touchX = 0, touchY = 0;
 
-  document.addEventListener('touchstart', e => {
-    const t = e.touches[0];
+  document.addEventListener('touchstart', function(e) {
+    var t = e.touches[0];
     startX = t.clientX;
     startY = t.clientY;
+    lastY = t.clientY;
+    touchX = t.clientX;
+    touchY = t.clientY;
     decided = false;
     isHorizontal = false;
+    moved = false;
   }, { passive: true });
 
-  document.addEventListener('touchmove', e => {
-    const t = e.touches[0];
-    const dx = t.clientX - startX;
-    const dy = t.clientY - startY;
+  document.addEventListener('touchmove', function(e) {
+    var t = e.touches[0];
+    var dx = t.clientX - startX;
+    var dy = t.clientY - startY;
 
-    if (!decided && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+    if (!decided && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       decided = true;
-      isHorizontal = Math.abs(dx) > Math.abs(dy);
-      if (isHorizontal) {
-        track.style.transition = 'none';
-      }
+      isHorizontal = Math.abs(dx) >= Math.abs(dy);
+      if (isHorizontal) track.style.transition = 'none';
+      moved = true;
     }
+
+    if (!decided) { e.preventDefault(); return; }
 
     if (isHorizontal) {
       e.preventDefault();
-      const offset = -(currentPage * window.innerWidth) + dx;
+      var offset = -(currentPage * window.innerWidth) + dx;
       track.style.transform = 'translateX(' + offset + 'px)';
+    } else {
+      // Vertical scroll within current page
+      var page = pages[currentPage];
+      if (page) page.scrollTop -= (t.clientY - lastY);
+      lastY = t.clientY;
+      e.preventDefault();
     }
-    // Vertical movement: let browser handle natively (page scroll)
   }, { passive: false });
 
-  document.addEventListener('touchend', e => {
-    if (!isHorizontal) return;
-    const dx = e.changedTouches[0].clientX - startX;
-    if (Math.abs(dx) > SWIPE_THRESHOLD) {
-      goToPage(dx < 0 ? currentPage + 1 : currentPage - 1);
-    } else {
-      goToPage(currentPage); // snap back
+  document.addEventListener('touchend', function(e) {
+    if (!moved) {
+      simulateTap(touchX, touchY);
+      return;
+    }
+    if (isHorizontal) {
+      var dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > SWIPE_THRESHOLD) {
+        goToPage(dx < 0 ? currentPage + 1 : currentPage - 1);
+      } else {
+        goToPage(currentPage);
+      }
     }
   }, { passive: true });
 
-  // Card navigation via native click (data-link)
-  document.querySelectorAll('[data-link]').forEach(card => {
-    card.style.cursor = 'pointer';
-    card.addEventListener('click', e => {
-      e.stopPropagation();
-      navigateTo(card.dataset.link);
-    });
+  // Click handlers (triggered by simulateTap)
+  document.querySelectorAll('.dot').forEach(function(dot) {
+    dot.addEventListener('click', function() { navigateTo(dot.dataset.page); });
   });
-
-  // Home button
-  document.getElementById('home-btn').addEventListener('click', () => goToPage(0));
-
-  // Dot navigation
-  document.querySelectorAll('.dot').forEach(dot => {
-    dot.addEventListener('click', () => navigateTo(dot.dataset.page));
-  });
+  document.getElementById('home-btn').addEventListener('click', function() { goToPage(0); });
 
   updateDots();
   resetInactivity();

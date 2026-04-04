@@ -25,7 +25,7 @@ html, body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  touch-action: auto;
+  touch-action: none;
   background: var(--bg);
   background-image: url('/wallpapers/current.png');
   background-size: cover;
@@ -63,6 +63,7 @@ body::before {
   height: 100%;
   overflow: hidden;
   position: relative;
+  touch-action: none;
 }
 
 #page-track {

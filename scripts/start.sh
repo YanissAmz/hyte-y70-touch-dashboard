@@ -18,11 +18,9 @@ else
 fi
 sleep 2
 
-# Fix touch input rotation (ILITEK touchscreen doesn't auto-rotate)
-for id in $(DISPLAY=:0 xinput list --id-only 2>/dev/null | while read i; do
-  DISPLAY=:0 xinput list-props "$i" 2>/dev/null | grep -q "Coordinate Transformation" && echo "$i"
-done); do
-  xinput set-prop "$id" "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1 2>/dev/null
+# Fix touch input rotation (ILITEK touchscreen doesn't auto-rotate with xrandr)
+for name in "ILITEK       ILITEK-TOUCH" "ILITEK       ILITEK-TOUCH Mouse"; do
+  xinput set-prop "$name" "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1 2>/dev/null
 done
 
 # Disable screen blanking

@@ -18,6 +18,17 @@
       d.textContent = 'JS ERROR: ' + msg + '\n' + src + ':' + line;
       document.body.appendChild(d);
     };
+    // Debug touch
+    var dbg = document.createElement('div');
+    dbg.style.cssText = 'position:fixed;top:10px;left:10px;background:red;color:white;font-size:40px;padding:10px 20px;z-index:99999;pointer-events:none;border-radius:10px';
+    dbg.textContent = 'JS OK';
+    document.body.appendChild(dbg);
+    document.addEventListener('touchstart', function(e) {
+      dbg.textContent = 'T:' + Math.round(e.touches[0].clientX) + ',' + Math.round(e.touches[0].clientY);
+    });
+    document.addEventListener('touchmove', function(e) {
+      dbg.textContent = 'M:' + Math.round(e.touches[0].clientX) + ',' + Math.round(e.touches[0].clientY);
+    });
     // Block all zoom gestures
     document.addEventListener('touchstart', function(e) {
       if (e.touches.length > 1) e.preventDefault();

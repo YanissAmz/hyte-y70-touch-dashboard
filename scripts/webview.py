@@ -35,8 +35,9 @@ class DashboardWindow(Gtk.Window):
         self.set_decorated(False)
         self._minimized = False
 
-        # Persistent cookies
+        # Disable cache + persistent cookies
         ctx = WebKit2.WebContext.get_default()
+        ctx.set_cache_model(WebKit2.CacheModel.DOCUMENT_VIEWER)
         cookie_mgr = ctx.get_cookie_manager()
         cookie_mgr.set_persistent_storage(
             os.path.join(CACHE_DIR, "cookies.db"),
@@ -49,6 +50,7 @@ class DashboardWindow(Gtk.Window):
         wk = self.webview.get_settings()
         wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.NEVER)
         wk.set_enable_javascript(True)
+        wk.set_enable_page_cache(False)
         self.webview.set_zoom_level(0.5)
         self.webview.load_uri(DASHBOARD_URL)
 
