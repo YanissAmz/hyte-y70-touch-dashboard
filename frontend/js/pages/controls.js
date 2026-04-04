@@ -1,7 +1,23 @@
 function initControls() {
-  // LED presets
+  // Effect buttons
+  document.querySelectorAll('.effect-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      fetch('/api/leds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ effect: btn.dataset.effect })
+      });
+    });
+  });
+
+  // LED presets (couleur statique → désactive l'effet actif)
   document.querySelectorAll('.led-preset').forEach(btn => {
     btn.addEventListener('click', () => {
+      // Preset couleur → passer en mode statique
+      document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.effect-btn[data-effect="static"]')?.classList.add('active');
       const r = parseInt(btn.dataset.r);
       const g = parseInt(btn.dataset.g);
       const b = parseInt(btn.dataset.b);
@@ -71,6 +87,57 @@ function initControls() {
       body: JSON.stringify({ action: 'on' })
     });
   });
+
+  // Brightness slider
+  const brightnessSlider = document.getElementById('brightness-slider');
+  const brightnessValue = document.getElementById('brightness-value');
+  let brightnessTimer = null;
+  if (brightnessSlider) {
+    brightnessSlider.addEventListener('input', () => {
+      const level = parseInt(brightnessSlider.value);
+      if (brightnessValue) brightnessValue.textContent = level + '%';
+      // Debounce — envoyer 300ms après la fin du glissement
+      clearTimeout(brightnessTimer);
+      brightnessTimer = setTimeout(() => {
+        fetch('/api/screen/brightness', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ level })
+        });
+      }, 300);
+    });
+  }
+
+  // Desktop mode button
+  const desktopBtn = document.getElementById('desktop-mode-btn');
+  if (desktopBtn) {
+    desktopBtn.addEventListener('click', () => {
+      // Via WebKit message handler si disponible (plus réactif)
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.dashboard) {
+        window.webkit.messageHandlers.dashboard.postMessage('desktop-mode');
+      } else {
+        // Fallback : passer par l'API REST (webview.py poll le signal file)
+        fetch('/api/desktop-mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'enter' })
+        });
+      }
+    });
+  }
+
+  // Vérifier le statut OpenRGB
+  fetch('/api/leds/status').then(r => r.json()).then(data => {
+    const badge = document.getElementById('led-status-badge');
+    if (!badge) return;
+    if (data.available) {
+      badge.textContent = `OpenRGB ✓ (${data.devices.length} device${data.devices.length > 1 ? 's' : ''})`;
+      badge.className = 'badge badge-green';
+    } else {
+      badge.textContent = 'OpenRGB offline';
+      badge.className = 'badge badge-red';
+    }
+  }).catch(() => {});
 
   // Load wallpapers
   fetch('/api/wallpapers').then(r => r.json()).then(wallpapers => {

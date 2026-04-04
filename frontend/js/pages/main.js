@@ -77,6 +77,30 @@ function updateMainPage(type, data) {
 }
 
 // Update time/date locally every second
+function updateNotifications(list) {
+  const card = document.getElementById('notif-card');
+  const el   = document.getElementById('notif-list');
+  if (!card || !el) return;
+  if (!list || list.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  el.innerHTML = list.slice(0, 5).map(n => {
+    const ago = Math.round((Date.now() / 1000 - n.ts) / 60);
+    const agoStr = ago < 1 ? 'à l\'instant' : ago + ' min';
+    return `<div class="notif-item">
+      <div class="notif-summary">${n.summary || '(sans titre)'}</div>
+      ${n.body ? `<div class="notif-body">${n.body}</div>` : ''}
+      <div class="notif-meta"><span>${n.app}</span><span>${agoStr}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function clearNotifications() {
+  const card = document.getElementById('notif-card');
+  const el   = document.getElementById('notif-list');
+  if (card) card.style.display = 'none';
+  if (el) el.innerHTML = '';
+}
+
 function updateClock() {
   const now = new Date();
   const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -85,5 +109,5 @@ function updateClock() {
   setText('date', date.charAt(0).toUpperCase() + date.slice(1));
 }
 
-setInterval(updateClock, 1000);
+setInterval(updateClock, 5000);
 document.addEventListener('DOMContentLoaded', updateClock);

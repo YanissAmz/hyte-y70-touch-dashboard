@@ -19,15 +19,16 @@ DISPLAY = os.environ.get("DISPLAY", ":0")
 
 # Collector intervals in seconds
 INTERVALS = {
-    "cpu": 2,
-    "memory": 2,
-    "gpu": 3,
-    "network": 3,
-    "disk": 30,
-    "wifi_scan": 60,
+    "cpu": 3,
+    "memory": 4,
+    "gpu": 5,
+    "network": 4,
+    "disk": 60,
+    "wifi_scan": 90,
     "weather": 900,
-    "system": 30,
-    "processes": 3,
+    "system": 60,
+    "processes": 5,
+    "ollama": 30,
 }
 
 # Hardware specs (for display)

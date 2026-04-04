@@ -1,4 +1,4 @@
-function updateProcessesPage(type, data) {
+function updateProcessesPage(type, data, skipRender) {
   if (type === 'processes') {
     const list = document.getElementById('proc-cpu-list');
     if (!list || !data.top_cpu) return;
@@ -52,12 +52,13 @@ function updateProcessesPage(type, data) {
       if (valEl) valEl.textContent = Math.round(val) + '%';
     });
 
-    // History chart
-    drawSparkline('history-chart', [
-      { data: history.cpu, color: '#58A6FF', max: 100, fill: true, fillColor: 'rgba(88,166,255,0.05)' },
-      { data: history.gpu, color: '#F0883E', max: 100, fill: true, fillColor: 'rgba(240,136,62,0.05)' },
-      { data: history.memory, color: '#3FB950', max: 100, fill: true, fillColor: 'rgba(63,185,80,0.05)' },
-    ]);
+    if (!skipRender) {
+      drawSparkline('history-chart', [
+        { data: history.cpu, color: '#58A6FF', max: 100, fill: true, fillColor: 'rgba(88,166,255,0.05)' },
+        { data: history.gpu, color: '#F0883E', max: 100, fill: true, fillColor: 'rgba(240,136,62,0.05)' },
+        { data: history.memory, color: '#3FB950', max: 100, fill: true, fillColor: 'rgba(63,185,80,0.05)' },
+      ]);
+    }
   }
 
   if (type === 'ollama') {

@@ -25,13 +25,13 @@
   stroke: var(--dim);
 }
 .gauge-fg {
-  transition: stroke-dashoffset 0.6s ease-out;
+  /* Transition retirée : relançait une animation WebKit à chaque update → 95% CPU */
 }
 
-.gauge-blue { stroke: var(--blue); filter: drop-shadow(0 0 8px rgba(88, 166, 255, 0.3)); }
-.gauge-green { stroke: var(--green); filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.3)); }
-.gauge-orange { stroke: var(--orange); filter: drop-shadow(0 0 8px rgba(240, 136, 62, 0.3)); }
-.gauge-red { stroke: var(--red); filter: drop-shadow(0 0 8px rgba(248, 81, 73, 0.3)); }
+.gauge-blue { stroke: var(--blue); }
+.gauge-green { stroke: var(--green); }
+.gauge-orange { stroke: var(--orange); }
+.gauge-red { stroke: var(--red); }
 
 .gauge-value {
   fill: var(--white);

@@ -15,9 +15,19 @@ function goToPage(index) {
   if (index < 0) index = totalPages - 1;
   if (index >= totalPages) index = 0;
   currentPage = index;
-  track.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+  track.style.transition = 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)';
   track.style.transform = 'translateX(-' + (currentPage * 100) + 'vw)';
   updateDots();
+  // Animation scale-in sur la page cible
+  var targetPage = pages[currentPage];
+  if (targetPage) {
+    targetPage.classList.remove('page-entering');
+    void targetPage.offsetWidth; // reflow
+    targetPage.classList.add('page-entering');
+    targetPage.addEventListener('animationend', function() {
+      targetPage.classList.remove('page-entering');
+    }, { once: true });
+  }
 }
 
 function navigateTo(pageId) {
@@ -31,7 +41,19 @@ function updateDots() {
   });
 }
 
+function spawnRipple(x, y) {
+  var ripple = document.createElement('div');
+  ripple.className = 'ripple-wave';
+  var size = 160;
+  ripple.style.cssText = 'width:' + size + 'px;height:' + size + 'px;' +
+    'left:' + (x - size / 2) + 'px;top:' + (y - size / 2) + 'px;' +
+    'position:fixed;';
+  document.body.appendChild(ripple);
+  ripple.addEventListener('animationend', function() { ripple.remove(); }, { once: true });
+}
+
 function simulateTap(x, y) {
+  spawnRipple(x, y);
   var el = document.elementFromPoint(x, y);
   if (!el) return;
 
@@ -109,7 +131,11 @@ function initTouch() {
     } else {
       // Vertical scroll within current page
       var page = pages[currentPage];
-      if (page) page.scrollTop -= (t.clientY - lastY);
+      if (page) {
+        // Pour les pages avec scroll interne (ex: ollama-messages), cibler le bon container
+        var scrollTarget = page.querySelector('.ollama-messages') || page;
+        scrollTarget.scrollTop -= (t.clientY - lastY);
+      }
       lastY = t.clientY;
       e.preventDefault();
     }

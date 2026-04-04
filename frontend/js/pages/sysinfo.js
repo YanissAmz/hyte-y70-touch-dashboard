@@ -1,4 +1,4 @@
-function updateSysinfoPage(type, data) {
+function updateSysinfoPage(type, data, skipRender) {
   if (type === 'system') {
     const hwGrid = document.getElementById('sysinfo-hw');
     if (hwGrid) {
@@ -49,25 +49,21 @@ function updateSysinfoPage(type, data) {
   if (type === 'disk') {
     pushHistory('disk_read', data.io_read_bps || 0);
     pushHistory('disk_write', data.io_write_bps || 0);
-
-    drawSparkline('diskio-chart', [
-      { data: history.disk_read, color: '#3FB950', fill: true, fillColor: 'rgba(63,185,80,0.08)' },
-      { data: history.disk_write, color: '#F85149', fill: true, fillColor: 'rgba(248,81,73,0.08)' },
-    ]);
-
     if (data.nvme_temp_c !== null) pushHistory('temp_nvme', data.nvme_temp_c);
+
+    if (!skipRender) {
+      drawSparkline('diskio-chart', [
+        { data: history.disk_read, color: '#3FB950', fill: true, fillColor: 'rgba(63,185,80,0.08)' },
+        { data: history.disk_write, color: '#F85149', fill: true, fillColor: 'rgba(248,81,73,0.08)' },
+      ]);
+    }
   }
 
-  if (type === 'cpu' && data.temp_c !== null) {
-    pushHistory('temp_cpu', data.temp_c);
-  }
+  if (type === 'cpu' && data.temp_c !== null) pushHistory('temp_cpu', data.temp_c);
+  if (type === 'gpu') pushHistory('temp_gpu', data.temp_c);
 
-  if (type === 'gpu') {
-    pushHistory('temp_gpu', data.temp_c);
-  }
-
-  // Temperature chart
-  if (type === 'cpu' || type === 'gpu' || type === 'disk') {
+  // Temperature chart — drawn seulement si pas idle
+  if (!skipRender && (type === 'cpu' || type === 'gpu' || type === 'disk')) {
     drawSparkline('temp-chart', [
       { data: history.temp_cpu, color: '#F85149', max: 100 },
       { data: history.temp_gpu, color: '#F0883E', max: 100 },

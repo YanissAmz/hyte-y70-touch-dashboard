@@ -4,7 +4,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px 40px;
-  backdrop-filter: blur(12px);
 }
 .net-detail-row {
   display: flex;
@@ -31,7 +30,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px;
-  backdrop-filter: blur(12px);
 }
 .sparkline-card h3 {
   font-size: 28px;
@@ -67,7 +65,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px;
-  backdrop-filter: blur(12px);
   flex: 1;
 }
 .wifi-list-card h3 {
@@ -126,7 +123,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px;
-  backdrop-filter: blur(12px);
 }
 .proc-section h3 {
   font-size: 28px;
@@ -210,7 +206,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px;
-  backdrop-filter: blur(12px);
 }
 .ollama-card h3 {
   font-size: 28px;
@@ -231,7 +226,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px;
-  backdrop-filter: blur(12px);
 }
 .control-card h3 {
   font-size: 28px;
@@ -293,6 +287,144 @@
   font-size: 18px;
 }
 .control-btn.danger { color: var(--red); border-color: rgba(248, 81, 73, 0.2); }
+.control-btn.desktop-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--purple);
+  border-color: rgba(188, 140, 255, 0.3);
+  font-size: 24px;
+  padding: 18px 32px;
+  width: 100%;
+  justify-content: center;
+}
+.control-btn.desktop-mode-btn svg { flex-shrink: 0; }
+.control-card-desktop .control-hint {
+  font-size: 20px;
+  color: var(--grey);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.brightness-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+.brightness-label {
+  font-size: 22px;
+  color: var(--grey);
+  white-space: nowrap;
+  min-width: 120px;
+}
+#brightness-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--card-border);
+  outline: none;
+}
+#brightness-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--white);
+  cursor: pointer;
+  border: 2px solid var(--blue);
+}
+#brightness-value {
+  font-size: 22px;
+  color: var(--white);
+  min-width: 60px;
+  text-align: right;
+}
+
+.badge-dim { color: var(--grey); background: rgba(100,100,100,0.1); }
+
+/* Notifications */
+.notif-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 24px 30px;
+  margin-bottom: 0;
+}
+.notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.notif-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--grey);
+  letter-spacing: 1px;
+}
+.notif-clear {
+  background: none;
+  border: 1px solid var(--card-border);
+  color: var(--grey);
+  font-size: 18px;
+  padding: 6px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.notif-item {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  gap: 4px;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-summary {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--white);
+}
+.notif-body {
+  font-size: 20px;
+  color: var(--grey);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notif-meta {
+  font-size: 18px;
+  color: rgba(139,148,158,0.6);
+  display: flex;
+  gap: 12px;
+}
+
+.led-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.effect-btn {
+  padding: 12px 22px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+  background: rgba(255,255,255,0.04);
+  color: var(--grey);
+  font-size: 20px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.effect-btn:active { transform: scale(0.95); }
+.effect-btn.active {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(188,140,255,0.12);
+}
 
 .service-row {
   display: flex;
@@ -327,7 +459,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px;
-  backdrop-filter: blur(12px);
 }
 .sysinfo-card h3 {
   font-size: 28px;
@@ -368,7 +499,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px 20px;
-  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -402,7 +532,6 @@
   border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 30px;
-  backdrop-filter: blur(12px);
   display: flex;
   gap: 16px;
   align-items: center;
@@ -421,4 +550,253 @@
 }
 #browser-url:focus {
   border-color: var(--blue);
+}
+
+/* ── Page 7: Ollama Chat ─────────────────────────────────────────────────── */
+
+#page-ollama {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.ollama-title-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 40px 16px;
+  gap: 20px;
+}
+
+.ollama-model-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.ollama-model-select {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(180,120,255,0.25);
+  border-radius: 14px;
+  color: var(--white);
+  font-size: 22px;
+  font-family: var(--font);
+  padding: 10px 20px;
+  outline: none;
+  cursor: pointer;
+  max-width: 340px;
+}
+
+.ollama-model-select option {
+  background: #1a1a2e;
+  color: var(--white);
+}
+
+.ollama-clear-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: var(--grey);
+  font-size: 26px;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ollama-clear-btn:active {
+  background: rgba(255,80,80,0.15);
+  color: var(--red);
+}
+
+/* Messages container */
+.ollama-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 32px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+.ollama-messages::-webkit-scrollbar { width: 6px; }
+.ollama-messages::-webkit-scrollbar-track { background: transparent; }
+.ollama-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+/* Welcome screen */
+.ollama-welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  opacity: 0.45;
+  margin: auto;
+  padding-bottom: 60px;
+}
+
+.ollama-welcome-icon {
+  font-size: 80px;
+  line-height: 1;
+}
+
+.ollama-welcome-text {
+  font-size: 30px;
+  color: var(--grey);
+  letter-spacing: 2px;
+  font-weight: 500;
+}
+
+/* Message bubbles */
+.ollama-msg-wrap {
+  display: flex;
+  max-width: 88%;
+  animation: notif-slide 0.22s ease both;
+}
+
+.ollama-user {
+  align-self: flex-end;
+  justify-content: flex-end;
+}
+
+.ollama-assistant {
+  align-self: flex-start;
+  justify-content: flex-start;
+}
+
+.ollama-bubble {
+  border-radius: 22px;
+  padding: 18px 24px;
+  font-size: 24px;
+  line-height: 1.6;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.ollama-user .ollama-bubble {
+  background: rgba(100, 120, 255, 0.22);
+  border: 1px solid rgba(100, 120, 255, 0.35);
+  color: var(--white);
+  border-bottom-right-radius: 6px;
+}
+
+.ollama-assistant .ollama-bubble {
+  background: rgba(180, 120, 255, 0.12);
+  border: 1px solid rgba(180, 120, 255, 0.22);
+  color: var(--white);
+  border-bottom-left-radius: 6px;
+}
+
+.ollama-streaming {
+  background: rgba(180, 120, 255, 0.08) !important;
+}
+
+/* Blinking cursor */
+.ollama-cursor {
+  display: inline-block;
+  animation: ollama-blink 0.8s step-end infinite;
+  color: rgba(180, 120, 255, 0.8);
+  font-weight: 400;
+}
+
+@keyframes ollama-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Code blocks */
+.ollama-code {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 20px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.ollama-inline-code {
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 22px;
+  color: rgba(180, 255, 180, 0.9);
+}
+
+/* Error */
+.ollama-error {
+  align-self: center;
+  font-size: 22px;
+  color: var(--red);
+  opacity: 0.7;
+  padding: 12px 24px;
+  background: rgba(255,80,80,0.08);
+  border-radius: 14px;
+  border: 1px solid rgba(255,80,80,0.2);
+}
+
+/* Input bar */
+.ollama-input-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 32px 32px;
+  background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
+}
+
+.ollama-input {
+  flex: 1;
+  height: 72px;
+  padding: 0 28px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(180,120,255,0.25);
+  background: rgba(255,255,255,0.06);
+  color: var(--white);
+  font-size: 26px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ollama-input:focus {
+  border-color: rgba(180,120,255,0.6);
+  background: rgba(255,255,255,0.08);
+}
+
+.ollama-send-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  border: none;
+  background: linear-gradient(135deg, rgba(100,80,220,0.7), rgba(180,80,255,0.7));
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s, background 0.2s;
+  box-shadow: 0 4px 20px rgba(140,80,255,0.3);
+}
+
+.ollama-send-btn:active {
+  transform: scale(0.92);
+  background: linear-gradient(135deg, rgba(80,60,200,0.9), rgba(160,60,235,0.9));
 }

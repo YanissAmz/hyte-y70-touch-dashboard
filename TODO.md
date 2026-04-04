@@ -1,83 +1,68 @@
 # HYTE Y70 Touch Dashboard — Notes & Roadmap
 
-## Ce qui a été fait (2026-04-03 — initial)
+## État actuel (2026-04-04)
 
 ### Backend (FastAPI + WebSocket)
-- **8 collectors temps réel** : CPU (psutil + k10temp), RAM, GPU (pynvml natif), Disk (I/O + NVMe temp), Network (SSID/signal/ping/speeds/WiFi scan/Tailscale), Weather (wttr.in cache 15min), Processes (top CPU + GPU), Ollama (API localhost:11434), System Info (hostname/uptime/kernel/docker)
-- **4 controllers REST** : LEDs (protocole serial GRB sur /dev/ttyACM0), Screen (xrandr on/off), Wallpaper (ImageMagick resize+darken), Services (ollama start/stop)
-- **WebSocket /ws** : snapshot initial à la connexion + updates incrémentaux par type
-- **Intervalles optimisés** : CPU/RAM 2s, GPU/Network 3s, Disk/System 30s, WiFi scan 60s, Weather 15min
+- **8 collectors temps réel** : CPU (psutil + k10temp), RAM, GPU (pynvml), Disk, Network (WiFi scan/Tailscale/ping), Weather, Processes, Ollama, System Info, Notifications (dbus-monitor)
+- **Controllers REST** : LEDs (OpenRGB SDK), Screen (DPMS xset), Wallpaper, Services, WiFi connect, Desktop mode
+- **Intervalles** : CPU 3s, RAM 4s, GPU 5s, Network 4s, Disk 60s, System 60s, WiFi 90s, Weather 15min, Ollama 30s
+- **Chat Ollama** : `POST /api/ollama/chat` streaming SSE + `GET /api/ollama/models`
 - Port 8070, venv Python dans `venv/`
 
-### Frontend (5 pages HTML/CSS/JS vanilla)
-- **Page 1 — Dashboard** : header (heure glow + date + météo), cards CPU+RAM en grille 2 colonnes, GPU hero card avec barre VRAM, Storage+Network en grille, footer avec settings
-- **Page 2 — Réseau** : détails connexion, ping sparkline, throughput graph, liste WiFi avec tap-to-connect
-- **Page 3 — Processus** : top CPU, GPU processes, per-core view (16 cores), history charts CPU/GPU/RAM, Ollama status
-- **Page 4 — Contrôles** : color wheel LED + presets, screen on/off, wallpaper gallery, service management
-- **Page 5 — Système** : specs hardware, OS/kernel, disk I/O graph, temp history, Docker containers
-- **Navigation** : scroll-snap, tap cards → page détaillée, dots indicator, home button, auto-retour 30s
-- **Design** : glassmorphism, glow effects, badges colorés, icônes SVG, anti burn-in pixel-shift
+### Frontend (7 pages HTML/CSS/JS vanilla)
+- **Page 1** — Dashboard : heure, météo, CPU/RAM/GPU/Disk/Network, notifications
+- **Page 2** — Réseau : détails, ping/throughput sparklines, WiFi scan + modal connect + clavier virtuel
+- **Page 3** — Processus : top CPU, GPU processes, per-core (16), history charts, Ollama status
+- **Page 4** — Contrôles : 9 effets LEDs, color wheel, 10 presets, screen on/off DPMS, slider luminosité, mode bureau, wallpaper gallery, services
+- **Page 5** — Système : specs, OS/kernel, disk I/O, temp history, Docker
+- **Page 6** — Apps : launcher 9 apps, barre URL → mode navigateur
+- **Page 7** — AI Chat : interface Ollama streaming, sélecteur modèle, markdown, clear
+- **Navigation** : swipe horizontal, dots, home button, auto-retour 30s
+- **Touch** : ripple effect, clavier virtuel QWERTY, scroll dans les listes
+- **Idle** : canvas redraws suspendus après 2 min sans interaction
 
 ### Affichage (webview.py)
-- **GTK3 + WebKit2** au lieu de Chromium (GNOME bloque le positionnement Chromium entre écrans)
-- `fullscreen_on_monitor()` pour cibler DP-0 spécifiquement
-- `zoom_level=0.5` pour compenser le GNOME scale=2 (Xft.dpi=192)
-- Hardware acceleration désactivée (préserve VRAM pour Ollama)
+- GTK3 + WebKit2, `zoom_level=0.5`, hardware acceleration `ALWAYS`
+- Mode bureau + mode navigateur + bouton ⌂ flottant
+- Signal file polling 1500ms
 
-### Scripts
-- `scripts/start.sh` — lance backend + Chromium kiosk (à migrer vers webview.py)
-- `scripts/start_conky.sh` — fallback Conky (ancien start.sh)
-- `scripts/screen_on.sh`, `screen_off.sh`, `monitor_screen.sh` — mis à jour
-- `dashboard.service` — systemd user unit (à installer)
+### LEDs (OpenRGB)
+- 3 devices : Corsair Dominator ×2 (I2C), MSI MPG X670E (HID, 79 LEDs)
+- 9 effets, 10 presets, color wheel
+- **threading.Lock** sur toutes les opérations I2C → fin de la race condition RAM
+- `set_mode("Direct")` systématique avant chaque couleur statique
 
-## Problèmes résolus
+## Problèmes résolus (session 2026-04-04)
 
 | Problème | Cause | Solution |
 |----------|-------|----------|
-| Chromium ne se positionne pas sur DP-0 | GNOME Mutter bloque les déplacements inter-écrans | GTK WebKit avec `fullscreen_on_monitor()` |
-| Contenu trop zoomé sur HYTE | GNOME scale=2, Xft.dpi=192 | `webview.set_zoom_level(0.5)` |
-| pynvml FutureWarning | Package pynvml deprecated | Installer nvidia-ml-py, import pynvml marche toujours |
-| Chromium snap commande | `chromium-browser` introuvable | Commande = `chromium` (snap) |
-| TV débranchée = écran cassé | HDMI-0 disconnected, DP-0 seul moniteur | Détecté, à gérer proprement au démarrage |
+| WebKit CPU à 95% | `pixel-shift 240s infinite` + `wifi-pulse` + `glow-pulse` CSS | Suppression des animations infinies |
+| GPU à 33% | `backdrop-filter: blur(12px)` × 14 + SVG `drop-shadow` | Supprimés, cards opaques |
+| RAM LEDs désynchronisées | Race condition thread rainbow vs thread set_color sur I2C | `threading.Lock()` partagé |
+| Screen on ne fonctionne pas | `xrandr --off` déconnecte X11 entièrement | Remplacé par DPMS (`xset dpms force off/on`) |
+| RAM LEDs ignorent le `set_mode` | Check `active_mode != 0` fragile | Toujours `d.set_mode("Direct")` sans condition |
+| WiFi modal bloqué (clavier disparaît) | `window.prompt()` non supporté WebKit GTK | Modal custom + `<input>` réel |
 
 ## Config hardware
 
-- **Écran principal** : TV 4K HDMI-0 3840x2160 (pas toujours branchée)
-- **HYTE Y70 Touch** : DP-0 3840x1100, rotate right → 1100x3840
-- **GNOME** : scale factor 2, Xft.dpi=192
-- **Coordonnées** : xdotool utilise pixels physiques, GNOME utilise logiques (÷2)
+- **HYTE Y70 Touch** : DP-0 3840×1100, rotate right → 1100×3840
+- **Touch** : ILITEK (USB 222a:0001), matrice xorg.conf.d + re-apply start.sh
+- **LEDs** : OpenRGB port 6742, service systemd
+- **GNOME** : scale 2, Xft.dpi=192, `zoom_level=0.5` dans webview
 
 ## TODO — Prochaines étapes
 
-### BLOQUANT — Touch cassé
-- [ ] **Le tactile ILITEK ne génère plus d'events X11** — `xinput test` ne reçoit rien quand on touche. Le device est listé (id 8/9), enabled, mais muet. Essayé : reset USB (`echo 0/1 > authorized`), reset xinput matrix → rien. Probablement besoin d'un reboot ou débranchement physique USB.
-- [ ] Après fix touch : remettre la matrice xinput : `xinput set-prop "ILITEK       ILITEK-TOUCH" "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1` (idem pour Mouse)
-
-### Fait (2026-04-04)
-- [x] Dual monitor : start.sh détecte HDMI-0 branché ou pas
-- [x] Migré start.sh/screen_on.sh/monitor_screen.sh de Chromium vers webview.py
-- [x] Layout Page 1 flex (remplit 3840px)
-- [x] Wallpaper fond visible (current.png auto-généré, overlay réduit)
-- [x] HiDPI canvas (devicePixelRatio dans charts.js)
-- [x] Navigation horizontale (swipe gauche/droite, loop, dots en bas)
-- [x] Systemd dashboard.service installé et enabled + linger
-- [x] Mode nuit cron (23h off, 7h on)
-- [x] screen.py gère HDMI-0 absent
-- [x] xinput rotation matrix dans start.sh pour ILITEK touch
-
-### À faire — LEDs
-- [ ] **LEDs ne marchent PAS via /dev/ttyACM0** — ce device (USB 3402:0c00) est le contrôleur ÉCRAN, pas LED. Protocole écran : `FF CC 01 [on/off] [brightness 0-100]`. Les LED strips sont sur header ARGB carte mère → utiliser **OpenRGB** (`sudo apt install openrgb`)
-- [ ] Intégrer OpenRGB dans le backend (API CLI ou SDK Python)
-- [ ] Remplacer le controller leds.py par des appels OpenRGB
-- [ ] Ajouter contrôle luminosité écran via protocole `FF CC 01`
+### À tester
+- [ ] **Notifications dbus-monitor** — vérifier avec une vraie notification Ubuntu
+- [ ] **Page AI Chat** — tester avec modèle llama3 chargé dans Ollama
+- [ ] **Mode bureau** — end-to-end : bouton → minimize → desktop → ⌂ → retour
 
 ### À faire — Fonctionnalités
-- [ ] **Mode bureau** : bouton pour minimiser le webview → accès desktop Ubuntu sur le HYTE, retour auto après inactivité
-- [ ] Navigateur/apps : fichiers JS existent (browser.js, launcher.js, keyboard.js) mais retirés du HTML pour simplifier. Remettre quand le mode bureau sera en place — le HYTE comme écran secondaire normal est plus flexible qu'un navigateur intégré
-- [ ] **Widgets** : notifications, calendrier, musique en cours
+- [ ] **Musique** — contrôles playerctl/MPRIS : titre, artiste, play/pause/skip (Spotify, VLC)
+- [ ] **Fond d'écran IA** — générer avec Stable Diffusion local (RTX 3090) sur commande
+- [ ] **Thèmes** — accent color dynamique, dark/light
 
 ### Polish
-- [ ] Animations de transition entre pages plus fluides
-- [ ] Graphes sparkline avec plus de style (gradient fill, points)
-- [ ] Feedback tactile visuel sur les cards (ripple effect)
-- [ ] Thèmes (dark/light/custom)
+- [ ] Retirer le debug overlay `dbg` définitivement si touch stable ✓ (déjà fait)
+- [ ] Feedback border glow au tap sur les cards
+- [ ] Graphes : axe Y avec labels valeurs

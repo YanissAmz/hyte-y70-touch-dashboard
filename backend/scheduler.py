@@ -33,7 +33,10 @@ class Scheduler:
             await asyncio.sleep(interval)
 
     def start(self):
-        from backend.collectors import cpu, memory, gpu, disk, network, weather, processes, system_info, ollama
+        from backend.collectors import cpu, memory, gpu, disk, network, weather, processes, system_info, ollama, notifications
+
+        # Démarrer le monitor de notifications (push uniquement, pas de polling)
+        asyncio.create_task(notifications.start_monitor(self.broadcast))
 
         collectors = {
             "cpu": cpu.collect,
@@ -59,7 +62,7 @@ class Scheduler:
         self._tasks.clear()
 
     async def get_snapshot(self) -> list[str]:
-        from backend.collectors import cpu, memory, gpu, disk, network, weather, processes, system_info, ollama
+        from backend.collectors import cpu, memory, gpu, disk, network, weather, processes, system_info, ollama, notifications
 
         collectors = {
             "cpu": cpu.collect,
@@ -70,6 +73,7 @@ class Scheduler:
             "weather": weather.collect,
             "system": system_info.collect,
             "ollama": ollama.collect,
+            "notifications": notifications.collect,
         }
 
         messages = []

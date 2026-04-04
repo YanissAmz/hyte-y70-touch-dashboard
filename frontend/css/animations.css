@@ -1,42 +1,36 @@
-/* Anti burn-in pixel shift */
-@keyframes pixel-shift {
-  0%   { transform: translate(0, 0); }
-  25%  { transform: translate(1px, 0); }
-  50%  { transform: translate(1px, 1px); }
-  75%  { transform: translate(0, 1px); }
-  100% { transform: translate(0, 0); }
-}
-
-#app {
-  animation: pixel-shift 240s linear infinite;
-}
-
-/* Value change animation */
+/* Value change flash — déclenchée une fois par mise à jour */
 @keyframes value-pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%   { opacity: 1; }
+  40%  { opacity: 0.55; }
   100% { opacity: 1; }
 }
-.value-changed {
-  animation: value-pulse 0.3s ease;
+.value-changed { animation: value-pulse 0.35s ease; }
+
+/* ── Ripple effect ─────────────────────────────────── */
+@keyframes ripple-expand {
+  0%   { transform: scale(0);   opacity: 0.45; }
+  100% { transform: scale(1);   opacity: 0; }
+}
+.ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+  animation: ripple-expand 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: center;
+  z-index: 9999;
 }
 
-/* Page transition */
-.page {
-  opacity: 1;
-  transition: opacity 0.3s ease;
+/* ── Page transition (incoming page scale-in) ──────── */
+@keyframes page-enter {
+  0%   { opacity: 0.6; transform: scale(0.985); }
+  100% { opacity: 1;   transform: scale(1); }
 }
+.page-entering { animation: page-enter 0.32s cubic-bezier(0.4, 0, 0.2, 1) both; }
 
-/* WiFi icon pulse */
-@keyframes wifi-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* ── Notification slide-in ─────────────────────────── */
+@keyframes notif-slide {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.wifi-icon { animation: wifi-pulse 3s ease-in-out infinite; }
-
-/* Glow pulse for active status */
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 4px var(--green); }
-  50% { box-shadow: 0 0 12px var(--green); }
-}
-.status-dot.active { animation: glow-pulse 2s ease-in-out infinite; }
+.notif-item { animation: notif-slide 0.25s ease both; }

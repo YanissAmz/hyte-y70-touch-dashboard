@@ -79,9 +79,15 @@ async def list_wallpapers():
 
 @app.post("/api/leds")
 async def set_leds(data: dict = Body(...)):
-    from backend.controllers.leds import set_color, turn_off
+    from backend.controllers.leds import set_color, turn_off, set_effect
     if data.get("preset") == "off":
         await turn_off()
+        return {"status": "ok"}
+    if data.get("effect"):
+        r = data.get("r", 255)
+        g = data.get("g", 255)
+        b = data.get("b", 255)
+        await set_effect(data["effect"], r, g, b)
         return {"status": "ok"}
     r, g, b = data.get("r", 255), data.get("g", 255), data.get("b", 255)
     await set_color(r, g, b)
@@ -96,6 +102,33 @@ async def screen_control(data: dict = Body(...)):
         await screen_off()
     elif action == "on":
         await screen_on()
+    return {"status": "ok"}
+
+
+@app.post("/api/screen/brightness")
+async def screen_brightness(data: dict = Body(...)):
+    from backend.controllers.screen import set_brightness
+    level = int(data.get("level", 80))
+    await set_brightness(level)
+    return {"status": "ok", "level": level}
+
+
+@app.get("/api/leds/status")
+async def leds_status():
+    from backend.controllers.leds import get_status
+    return get_status()
+
+
+@app.post("/api/desktop-mode")
+async def desktop_mode(data: dict = Body(...)):
+    """Signale au webview de basculer en mode bureau ou de revenir."""
+    import pathlib
+    action = data.get("action", "enter")
+    signal_file = pathlib.Path("/tmp/hyte-desktop-mode")
+    if action == "enter":
+        signal_file.write_text("enter")
+    elif action == "exit":
+        signal_file.write_text("exit")
     return {"status": "ok"}
 
 
@@ -130,6 +163,60 @@ async def service_control(name: str, data: dict = Body(...)):
     action = data.get("action", "")
     result = await control_service(name, action)
     return result
+
+
+@app.get("/api/ollama/models")
+async def ollama_models():
+    """Liste les modèles disponibles sur Ollama."""
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=3) as client:
+            resp = await client.get("http://localhost:11434/api/tags")
+            data = resp.json()
+            models = [m["name"] for m in data.get("models", [])]
+            return {"models": models}
+    except Exception:
+        return {"models": []}
+
+
+@app.post("/api/ollama/chat")
+async def ollama_chat(data: dict = Body(...)):
+    """Envoie un message à Ollama et stream la réponse via SSE."""
+    import httpx
+    import json
+    from fastapi.responses import StreamingResponse
+
+    model = data.get("model", "llama3")
+    messages = data.get("messages", [])
+
+    async def stream_response():
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                async with client.stream(
+                    "POST",
+                    "http://localhost:11434/api/chat",
+                    json={"model": model, "messages": messages, "stream": True},
+                ) as resp:
+                    async for line in resp.aiter_lines():
+                        if not line:
+                            continue
+                        try:
+                            chunk = json.loads(line)
+                            content = chunk.get("message", {}).get("content", "")
+                            done = chunk.get("done", False)
+                            yield f"data: {json.dumps({'content': content, 'done': done})}\n\n"
+                            if done:
+                                break
+                        except Exception:
+                            continue
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+
+    return StreamingResponse(
+        stream_response(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # Serve static files (CSS, JS)

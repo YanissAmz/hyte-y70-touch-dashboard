@@ -16,7 +16,7 @@
     kbd = document.createElement('div');
     kbd.id = 'virtual-keyboard';
     kbd.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:500;' +
-      'background:rgba(13,15,20,0.95);backdrop-filter:blur(16px);' +
+      'background:rgba(13,15,20,0.97);' +
       'border-top:1px solid rgba(255,255,255,0.08);' +
       'padding:16px 12px;display:none;flex-direction:column;gap:10px';
 
@@ -126,11 +126,13 @@
       }
     });
 
-    // Hide on tap outside keyboard and input
+    // Hide on tap outside keyboard, input, and modal
     document.addEventListener('touchstart', e => {
       if (!kbd || kbd.style.display === 'none') return;
       if (kbd.contains(e.target)) return;
-      if (e.target.tagName === 'INPUT') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      // Ne pas cacher si on est dans un modal
+      if (e.target.closest && e.target.closest('.modal-overlay, .modal')) return;
       hide();
     }, { passive: true });
   });

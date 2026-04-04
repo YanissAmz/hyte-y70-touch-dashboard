@@ -1,4 +1,38 @@
-function updateNetworkPage(type, data) {
+function wifiConnectModal(ssid) {
+  const overlay = document.getElementById('wifi-modal');
+  const title   = document.getElementById('wifi-modal-title');
+  const input   = document.getElementById('wifi-modal-input');
+  const btnOk   = document.getElementById('wifi-modal-connect');
+  const btnCancel = document.getElementById('wifi-modal-cancel');
+  if (!overlay) return;
+
+  title.textContent = 'Connexion : ' + ssid;
+  input.value = '';
+  overlay.classList.add('active');
+  // Focus l'input → keyboard.js affichera le clavier virtuel
+  setTimeout(() => input.focus(), 100);
+
+  function doConnect() {
+    const password = input.value;
+    overlay.classList.remove('active');
+    fetch('/api/wifi/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ssid, password })
+    });
+  }
+
+  function doCancel() {
+    overlay.classList.remove('active');
+  }
+
+  // Remplacer les listeners (éviter les doublons)
+  btnOk.onclick = doConnect;
+  btnCancel.onclick = doCancel;
+  input.onkeydown = e => { if (e.key === 'Enter') doConnect(); };
+}
+
+function updateNetworkPage(type, data, skipRender) {
   if (type === 'network') {
     setText('net2-ssid', data.ssid);
     setText('net2-signal', (data.signal_dbm || '--') + ' dBm (' + (data.signal_percent || '--') + '%)');
@@ -13,29 +47,20 @@ function updateNetworkPage(type, data) {
 
     setText('ping-value', data.ping_ms !== null ? Math.round(data.ping_ms) + ' ms' : '-- ms');
 
-    // Update sparklines
-    drawSparkline('ping-chart', [{
-      data: history.ping,
-      color: '#58A6FF',
-      fill: true,
-      fillColor: 'rgba(88, 166, 255, 0.1)',
-      max: Math.max(100, ...history.ping),
-    }]);
+    if (!skipRender) {
+      drawSparkline('ping-chart', [{
+        data: history.ping,
+        color: '#58A6FF',
+        fill: true,
+        fillColor: 'rgba(88, 166, 255, 0.1)',
+        max: Math.max(100, ...history.ping),
+      }]);
 
-    drawSparkline('throughput-chart', [
-      {
-        data: history.download,
-        color: '#3FB950',
-        fill: true,
-        fillColor: 'rgba(63, 185, 80, 0.08)',
-      },
-      {
-        data: history.upload,
-        color: '#F85149',
-        fill: true,
-        fillColor: 'rgba(248, 81, 73, 0.08)',
-      }
-    ]);
+      drawSparkline('throughput-chart', [
+        { data: history.download, color: '#3FB950', fill: true, fillColor: 'rgba(63, 185, 80, 0.08)' },
+        { data: history.upload, color: '#F85149', fill: true, fillColor: 'rgba(248, 81, 73, 0.08)' },
+      ]);
+    }
   }
 
   if (type === 'wifi_scan') {
@@ -56,18 +81,10 @@ function updateNetworkPage(type, data) {
       </div>
     `).join('');
 
-    // Click to connect
+    // Click to connect — modal custom (window.prompt ne fonctionne pas dans WebKit GTK)
     list.querySelectorAll('.wifi-item:not(.connected)').forEach(item => {
       item.addEventListener('click', () => {
-        const ssid = item.dataset.ssid;
-        const password = prompt('Password for ' + ssid + ':');
-        if (password !== null) {
-          fetch('/api/wifi/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ssid, password })
-          });
-        }
+        wifiConnectModal(item.dataset.ssid);
       });
     });
   }

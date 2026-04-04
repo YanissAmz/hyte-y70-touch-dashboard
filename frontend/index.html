@@ -12,23 +12,6 @@
 </head>
 <body>
   <script>
-    window.onerror = function(msg, src, line, col, err) {
-      var d = document.createElement('div');
-      d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;font-size:24px;z-index:9999;white-space:pre-wrap';
-      d.textContent = 'JS ERROR: ' + msg + '\n' + src + ':' + line;
-      document.body.appendChild(d);
-    };
-    // Debug touch
-    var dbg = document.createElement('div');
-    dbg.style.cssText = 'position:fixed;top:10px;left:10px;background:red;color:white;font-size:40px;padding:10px 20px;z-index:99999;pointer-events:none;border-radius:10px';
-    dbg.textContent = 'JS OK';
-    document.body.appendChild(dbg);
-    document.addEventListener('touchstart', function(e) {
-      dbg.textContent = 'T:' + Math.round(e.touches[0].clientX) + ',' + Math.round(e.touches[0].clientY);
-    });
-    document.addEventListener('touchmove', function(e) {
-      dbg.textContent = 'M:' + Math.round(e.touches[0].clientX) + ',' + Math.round(e.touches[0].clientY);
-    });
     // Block all zoom gestures
     document.addEventListener('touchstart', function(e) {
       if (e.touches.length > 1) e.preventDefault();
@@ -242,6 +225,15 @@
           </div>
         </div>
 
+        <!-- Notifications -->
+        <div class="notif-card" id="notif-card" style="display:none">
+          <div class="notif-header">
+            <span class="notif-title">Notifications</span>
+            <button class="notif-clear" onclick="clearNotifications()">Effacer</button>
+          </div>
+          <div id="notif-list"></div>
+        </div>
+
         <!-- Footer -->
         <div class="footer">
           <div class="separator"></div>
@@ -362,7 +354,20 @@
         </div>
 
         <div class="control-card">
-          <h3>Case LEDs</h3>
+          <h3>Case LEDs <span id="led-status-badge" class="badge badge-dim">OpenRGB</span></h3>
+
+          <div class="led-effects">
+            <button class="effect-btn active" data-effect="rainbow">🌈 Arc-en-ciel</button>
+            <button class="effect-btn" data-effect="breathing">💫 Breathing</button>
+            <button class="effect-btn" data-effect="color_wave">〰️ Wave</button>
+            <button class="effect-btn" data-effect="visor">⚡ Visor</button>
+            <button class="effect-btn" data-effect="meteor">☄️ Meteor</button>
+            <button class="effect-btn" data-effect="fire">🔥 Fire</button>
+            <button class="effect-btn" data-effect="energy">⚡ Energy</button>
+            <button class="effect-btn" data-effect="stack">📚 Stack</button>
+            <button class="effect-btn" data-effect="static">◼ Statique</button>
+          </div>
+
           <div class="led-controls">
             <div class="color-wheel-wrap">
               <canvas id="color-wheel" width="300" height="300"></canvas>
@@ -374,6 +379,9 @@
               <button class="led-preset" data-r="240" data-g="136" data-b="62" style="background:#F0883E"></button>
               <button class="led-preset" data-r="248" data-g="81" data-b="73" style="background:#F85149"></button>
               <button class="led-preset" data-r="188" data-g="140" data-b="255" style="background:#BC8CFF"></button>
+              <button class="led-preset" data-r="255" data-g="215" data-b="0" style="background:#FFD700"></button>
+              <button class="led-preset" data-r="0" data-g="255" data-b="200" style="background:#00FFC8"></button>
+              <button class="led-preset" data-r="255" data-g="20" data-b="147" style="background:#FF1493"></button>
               <button class="led-preset" data-r="0" data-g="0" data-b="0" style="background:#333;border:1px solid #555">OFF</button>
             </div>
           </div>
@@ -385,6 +393,20 @@
             <button class="control-btn" id="screen-off-btn">Screen Off</button>
             <button class="control-btn" id="screen-on-btn">Screen On</button>
           </div>
+          <div class="brightness-row">
+            <span class="brightness-label">Luminosité</span>
+            <input type="range" id="brightness-slider" min="10" max="100" value="80" step="5">
+            <span id="brightness-value">80%</span>
+          </div>
+        </div>
+
+        <div class="control-card control-card-desktop">
+          <h3>Mode Bureau</h3>
+          <p class="control-hint">Minimise le dashboard — accès au bureau Ubuntu sur cet écran. Retour automatique après 5 min d'inactivité.</p>
+          <button class="control-btn desktop-mode-btn" id="desktop-mode-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Passer en mode bureau
+          </button>
         </div>
 
         <div class="control-card">
@@ -449,6 +471,60 @@
         </div>
       </section>
 
+      <!-- PAGE 6: LAUNCHER -->
+      <section id="page-launcher" class="page">
+        <div class="page-title-bar">
+          <h1 class="page-title" style="color:var(--orange)">APPS</h1>
+        </div>
+
+        <div class="launcher-grid" id="launcher-grid"></div>
+
+        <div class="browser-input-card">
+          <input type="url" id="browser-url" placeholder="URL ou recherche Google…" autocomplete="off">
+          <button class="control-btn" id="browser-go">→</button>
+        </div>
+      </section>
+
+      <!-- PAGE 7: OLLAMA CHAT -->
+      <section id="page-ollama" class="page">
+        <div class="page-title-bar ollama-title-bar">
+          <h1 class="page-title" style="color:var(--purple)">AI CHAT</h1>
+          <div class="ollama-model-row">
+            <select id="ollama-model-select" class="ollama-model-select"></select>
+            <button class="ollama-clear-btn" id="ollama-clear" title="Effacer la conversation">&#x1F5D1;</button>
+          </div>
+        </div>
+
+        <div class="ollama-messages" id="ollama-messages">
+          <div class="ollama-welcome">
+            <div class="ollama-welcome-icon">&#x1F916;</div>
+            <div class="ollama-welcome-text">Prêt à discuter</div>
+          </div>
+        </div>
+
+        <div class="ollama-input-bar">
+          <input type="text" id="ollama-input" class="ollama-input" placeholder="Pose une question…" autocomplete="off">
+          <button class="ollama-send-btn" id="ollama-send">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      </div>
+    </div>
+
+    <!-- WiFi connect modal -->
+    <div class="modal-overlay" id="wifi-modal">
+      <div class="modal">
+        <h3 id="wifi-modal-title">WiFi Password</h3>
+        <input type="password" id="wifi-modal-input" placeholder="Mot de passe…" autocomplete="off">
+        <div class="modal-btns">
+          <button class="control-btn" id="wifi-modal-cancel">Annuler</button>
+          <button class="control-btn" id="wifi-modal-connect" style="color:var(--green);border-color:rgba(63,185,80,0.3)">Connecter</button>
+        </div>
       </div>
     </div>
 
@@ -459,6 +535,8 @@
       <span class="dot" data-page="page-processes"></span>
       <span class="dot" data-page="page-controls"></span>
       <span class="dot" data-page="page-sysinfo"></span>
+      <span class="dot" data-page="page-launcher"></span>
+      <span class="dot" data-page="page-ollama"></span>
     </nav>
 
     <button id="home-btn" aria-label="Home">
@@ -471,12 +549,16 @@
   <script src="/js/utils.js"></script>
   <script src="/js/gauges.js"></script>
   <script src="/js/charts.js"></script>
+  <script src="/js/keyboard.js"></script>
   <script src="/js/touch.js"></script>
   <script src="/js/pages/main.js"></script>
   <script src="/js/pages/network.js"></script>
   <script src="/js/pages/processes.js"></script>
   <script src="/js/pages/controls.js"></script>
   <script src="/js/pages/sysinfo.js"></script>
+  <script src="/js/pages/browser.js"></script>
+  <script src="/js/pages/launcher.js"></script>
+  <script src="/js/pages/ollama.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>
