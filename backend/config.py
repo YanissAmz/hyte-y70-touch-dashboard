@@ -22,12 +22,12 @@ INTERVALS = {
     "cpu": 3,
     "memory": 4,
     "gpu": 5,
-    "network": 4,
+    "network": 8,
     "disk": 60,
     "wifi_scan": 90,
     "weather": 900,
     "system": 60,
-    "processes": 5,
+    "processes": 10,
     "ollama": 30,
 }
 

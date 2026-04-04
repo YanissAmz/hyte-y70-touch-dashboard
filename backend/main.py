@@ -1,7 +1,8 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
@@ -66,8 +67,6 @@ async def websocket_endpoint(ws: WebSocket):
 
 
 # Controllers - REST endpoints
-from fastapi import Body
-
 
 @app.get("/api/wallpapers")
 async def list_wallpapers():
@@ -130,6 +129,38 @@ async def desktop_mode(data: dict = Body(...)):
     elif action == "exit":
         signal_file.write_text("exit")
     return {"status": "ok"}
+
+
+_NATIVE_APPS = {
+    "terminal": ["gnome-terminal"],
+    "files":    ["nautilus", "--new-window"],
+    "settings": ["gnome-control-center"],
+    "firefox":  ["firefox"],
+    "code":     ["code"],
+    "spotify":  ["spotify"],
+}
+
+@app.post("/api/launch")
+async def launch_app(data: dict = Body(...)):
+    """Lance une app native sur DP-0 et bascule le webview en mode bureau."""
+    import subprocess
+    import pathlib
+    from backend.config import DISPLAY
+
+    app_key = data.get("app", "")
+    cmd = _NATIVE_APPS.get(app_key)
+    if not cmd:
+        return {"status": "error", "message": f"App inconnue: {app_key}"}
+
+    env = {**__import__("os").environ, "DISPLAY": DISPLAY}
+    try:
+        subprocess.Popen(cmd, env=env, start_new_session=True)
+    except FileNotFoundError:
+        return {"status": "error", "message": f"Commande introuvable: {cmd[0]}"}
+
+    # Signaler au webview de s'iconifier
+    pathlib.Path("/tmp/hyte-desktop-mode").write_text("enter")
+    return {"status": "ok", "app": app_key}
 
 
 @app.post("/api/wallpaper")
@@ -217,6 +248,106 @@ async def ollama_chat(data: dict = Body(...)):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ── Volume (PipeWire via wpctl) ───────────────────────────────────────────────
+
+_WPCTL_ENV = {**__import__("os").environ, "XDG_RUNTIME_DIR": "/run/user/1000"}
+
+async def _wpctl(*args) -> str:
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "wpctl", *args,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+            env=_WPCTL_ENV
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=3)
+        return stdout.decode().strip()
+    except Exception:
+        return ""
+
+
+@app.get("/api/volume")
+async def volume_get():
+    out = await _wpctl("get-volume", "@DEFAULT_AUDIO_SINK@")
+    # Sortie: "Volume: 0.80" ou "Volume: 0.80 [MUTED]"
+    level = None
+    muted = "[MUTED]" in out
+    try:
+        level = round(float(out.split(":")[1].split()[0]) * 100)
+    except Exception:
+        pass
+    return {"level": level, "muted": muted}
+
+
+@app.post("/api/volume")
+async def volume_set(data: dict = Body(...)):
+    if "level" in data:
+        level = max(0, min(100, int(data["level"])))
+        await _wpctl("set-volume", "@DEFAULT_AUDIO_SINK@", f"{level}%")
+    if data.get("mute") is not None:
+        val = "1" if data["mute"] else "0"
+        await _wpctl("set-mute", "@DEFAULT_AUDIO_SINK@", val)
+    return {"status": "ok"}
+
+
+# ── Bluetooth (bluetoothctl) ─────────────────────────────────────────────────
+
+async def _bt_run(args: list[str], timeout: float = 12) -> str:
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "bluetoothctl", *args,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        return stdout.decode()
+    except Exception:
+        return ""
+
+
+@app.get("/api/bluetooth")
+async def bluetooth_devices():
+    out = await _bt_run(["devices", "Paired"])
+    devices = []
+    for line in out.strip().splitlines():
+        parts = line.split(" ", 2)
+        if len(parts) >= 3:
+            addr = parts[1]
+            name = parts[2]
+            info = await _bt_run(["info", addr])
+            connected = "Connected: yes" in info
+            devices.append({"address": addr, "name": name, "connected": connected})
+    return {"devices": devices}
+
+
+@app.post("/api/bluetooth/scan")
+async def bluetooth_scan():
+    # Scan 8s puis retourner les devices découverts
+    proc = await asyncio.create_subprocess_exec(
+        "bluetoothctl", "--timeout", "8", "scan", "on",
+        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+    )
+    await proc.wait()
+    out = await _bt_run(["devices"])
+    devices = []
+    for line in out.strip().splitlines():
+        parts = line.split(" ", 2)
+        if len(parts) >= 3:
+            devices.append({"address": parts[1], "name": parts[2]})
+    return {"devices": devices}
+
+
+@app.post("/api/bluetooth/connect")
+async def bluetooth_connect(data: dict = Body(...)):
+    address = data.get("address", "")
+    action = data.get("action", "connect")
+    if not address:
+        return {"status": "error", "message": "address manquante"}
+    if action not in ("connect", "disconnect"):
+        return {"status": "error", "message": "action invalide"}
+    out = await _bt_run([action, address])
+    success = "successful" in out.lower() or "Connected" in out
+    return {"status": "ok" if success else "error", "output": out.strip()}
 
 
 # Serve static files (CSS, JS)

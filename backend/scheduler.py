@@ -76,11 +76,15 @@ class Scheduler:
             "notifications": notifications.collect,
         }
 
+        names = list(collectors.keys())
+        fns = list(collectors.values())
+
+        results = await asyncio.gather(*[fn() for fn in fns], return_exceptions=True)
+
         messages = []
-        for name, fn in collectors.items():
-            try:
-                data = await fn()
-                messages.append(json.dumps({"type": name, "ts": time.time(), "data": data}))
-            except Exception as e:
-                logger.warning(f"Snapshot {name} error: {e}")
+        for name, result in zip(names, results):
+            if isinstance(result, Exception):
+                logger.warning(f"Snapshot {name} error: {result}")
+            else:
+                messages.append(json.dumps({"type": name, "ts": time.time(), "data": result}))
         return messages

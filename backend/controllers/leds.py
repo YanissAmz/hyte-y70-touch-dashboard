@@ -130,8 +130,8 @@ async def _breathing_loop(r: int, g: int, b: int):
             # Sinus 0→1→0 sur 3 secondes
             brightness = (math.sin(t * math.pi) ** 2)
             await asyncio.to_thread(_breathing_frame_sync, r, g, b, brightness)
-            t = (t + 0.04) % 2.0  # période 2s à 50ms/frame
-            await asyncio.sleep(0.05)
+            t = (t + 0.067) % 2.0  # période 3s à 100ms/frame
+            await asyncio.sleep(0.1)
     except asyncio.CancelledError:
         pass
 

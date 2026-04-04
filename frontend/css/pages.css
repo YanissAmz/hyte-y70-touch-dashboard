@@ -487,11 +487,23 @@
 }
 
 /* Page 6: App Launcher */
+#page-launcher {
+  overflow-y: auto;
+  gap: 16px;
+}
+
+.launcher-section-label {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 0 2px;
+}
 .launcher-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  flex: 1;
   align-content: start;
 }
 .launcher-item {
@@ -800,3 +812,85 @@
   transform: scale(0.92);
   background: linear-gradient(135deg, rgba(80,60,200,0.9), rgba(160,60,235,0.9));
 }
+
+/* Page 8: Settings */
+#page-settings {
+  overflow-y: auto;
+  gap: 20px;
+}
+.settings-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.settings-card h3 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+.settings-scan-btn {
+  font-size: 20px;
+  padding: 8px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(88,166,255,0.3);
+  background: rgba(88,166,255,0.1);
+  color: var(--blue);
+  cursor: pointer;
+}
+.settings-scan-btn:active { opacity: 0.7; }
+.settings-scan-btn:disabled { opacity: 0.4; }
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.volume-mute-btn {
+  font-size: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.volume-row input[type=range] { flex: 1; }
+#volume-value { font-size: 26px; color: var(--muted); min-width: 60px; text-align: right; }
+.bt-list { display: flex; flex-direction: column; gap: 12px; min-height: 40px; }
+.bt-empty { font-size: 22px; color: var(--dim); padding: 8px 0; }
+.bt-device-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+.bt-device-row:last-child { border-bottom: none; }
+.bt-name { flex: 1; font-size: 24px; color: var(--white); }
+.bt-status { font-size: 20px; color: var(--muted); min-width: 130px; }
+.bt-status.connected { color: var(--green); }
+.settings-shortcuts { display: flex; flex-direction: column; gap: 20px; }
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.shortcut-row > span {
+  font-size: 24px;
+  color: var(--white);
+  min-width: 160px;
+}
+.shortcut-row .brightness-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+.shortcut-row .brightness-row input[type=range] { flex: 1; }
+.shortcut-row .screen-controls { display: flex; gap: 12px; }

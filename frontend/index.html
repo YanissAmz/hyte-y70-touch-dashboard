@@ -477,7 +477,11 @@
           <h1 class="page-title" style="color:var(--orange)">APPS</h1>
         </div>
 
-        <div class="launcher-grid" id="launcher-grid"></div>
+        <div class="launcher-section-label">Apps natives</div>
+        <div class="launcher-grid" id="launcher-native-grid"></div>
+
+        <div class="launcher-section-label">Web</div>
+        <div class="launcher-grid" id="launcher-web-grid"></div>
 
         <div class="browser-input-card">
           <input type="url" id="browser-url" placeholder="URL ou recherche Google…" autocomplete="off">
@@ -513,6 +517,59 @@
         </div>
       </section>
 
+      <!-- PAGE 8: SETTINGS -->
+      <section id="page-settings" class="page">
+        <div class="page-title-bar">
+          <h1 class="page-title" style="color:var(--green)">SETTINGS</h1>
+        </div>
+
+        <div class="settings-card">
+          <h3>Volume</h3>
+          <div class="volume-row">
+            <button class="volume-mute-btn" id="volume-mute-btn">🔊</button>
+            <input type="range" id="volume-slider" min="0" max="100" value="50" step="1">
+            <span id="volume-value">50%</span>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>Bluetooth
+            <button class="settings-scan-btn" id="bt-scan-btn">Scan</button>
+          </h3>
+          <div class="bt-list" id="bt-list">
+            <div class="bt-empty">Chargement…</div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>Raccourcis</h3>
+          <div class="settings-shortcuts">
+            <div class="shortcut-row">
+              <span>WiFi</span>
+              <button class="control-btn small" onclick="navigateTo('page-network')">→ Réseau</button>
+            </div>
+            <div class="shortcut-row">
+              <span>Luminosité</span>
+              <div class="brightness-row">
+                <input type="range" id="settings-brightness-slider" min="10" max="100" value="80" step="5">
+                <span id="settings-brightness-value">80%</span>
+              </div>
+            </div>
+            <div class="shortcut-row">
+              <span>Écran</span>
+              <div class="screen-controls">
+                <button class="control-btn small" id="settings-screen-off">Off</button>
+                <button class="control-btn small" id="settings-screen-on">On</button>
+              </div>
+            </div>
+            <div class="shortcut-row">
+              <span>Dashboard</span>
+              <button class="control-btn small danger" id="settings-restart-btn">Redémarrer</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       </div>
     </div>
 
@@ -537,6 +594,7 @@
       <span class="dot" data-page="page-sysinfo"></span>
       <span class="dot" data-page="page-launcher"></span>
       <span class="dot" data-page="page-ollama"></span>
+      <span class="dot" data-page="page-settings"></span>
     </nav>
 
     <button id="home-btn" aria-label="Home">
@@ -559,6 +617,7 @@
   <script src="/js/pages/browser.js"></script>
   <script src="/js/pages/launcher.js"></script>
   <script src="/js/pages/ollama.js"></script>
+  <script src="/js/pages/settings.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

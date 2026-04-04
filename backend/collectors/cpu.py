@@ -17,8 +17,9 @@ def _read_cpu_temp() -> int | None:
 
 
 async def collect() -> dict:
-    usage = await asyncio.to_thread(psutil.cpu_percent, interval=None)
+    # Un seul appel percpu=True, overall = moyenne — évite le double appel interval=None
     per_core = await asyncio.to_thread(psutil.cpu_percent, interval=None, percpu=True)
+    usage = round(sum(per_core) / len(per_core), 1) if per_core else 0.0
     freq = psutil.cpu_freq()
     temp = _read_cpu_temp()
 

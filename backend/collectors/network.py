@@ -1,5 +1,4 @@
 import asyncio
-import subprocess
 import time
 
 import psutil
@@ -21,8 +20,21 @@ async def _run_cmd(cmd: list[str], timeout: float = 5) -> str:
         return ""
 
 
-async def _get_ssid() -> str:
-    return await _run_cmd(["iwgetid", "-r", NETWORK_INTERFACE])
+async def _get_wifi_info() -> tuple[str, int | None]:
+    """SSID + fréquence en un seul appel 'iw dev link' (remplace iwgetid x2)."""
+    out = await _run_cmd(["iw", "dev", NETWORK_INTERFACE, "link"])
+    ssid = ""
+    freq = None
+    for line in out.splitlines():
+        line = line.strip()
+        if line.startswith("SSID:"):
+            ssid = line[5:].strip()
+        elif line.startswith("freq:"):
+            try:
+                freq = int(line.split(":")[1].strip())
+            except Exception:
+                pass
+    return ssid, freq
 
 
 async def _get_signal() -> int | None:
@@ -36,17 +48,6 @@ async def _get_signal() -> int | None:
                 return int(float(parts[2].rstrip(".")))
     except Exception:
         pass
-    return None
-
-
-async def _get_frequency() -> int | None:
-    out = await _run_cmd(["iwgetid", "-f", NETWORK_INTERFACE])
-    if out:
-        try:
-            freq_str = out.split(":")[-1].strip()
-            return int(float(freq_str) / 1e6)
-        except Exception:
-            pass
     return None
 
 
@@ -88,21 +89,31 @@ async def _get_ip_public() -> str | None:
         return _ip_public_cache
 
 
+_tailscale_cache: dict | None = None
+_tailscale_ts = 0
+_TAILSCALE_TTL = 60
+
+
 async def _get_tailscale() -> dict:
+    global _tailscale_cache, _tailscale_ts
+    now = time.time()
+    if _tailscale_cache is not None and (now - _tailscale_ts) < _TAILSCALE_TTL:
+        return _tailscale_cache
     out = await _run_cmd(["tailscale", "status", "--json"])
+    result: dict = {"status": "disconnected", "ip": None}
     if out:
         try:
             import json
             data = json.loads(out)
-            self_key = data.get("Self", "")
-            peers = data.get("Peer", {})
             self_node = data.get("Self", {})
             if isinstance(self_node, dict):
                 ts_ips = self_node.get("TailscaleIPs", [])
-                return {"status": "connected", "ip": ts_ips[0] if ts_ips else None}
+                result = {"status": "connected", "ip": ts_ips[0] if ts_ips else None}
         except Exception:
             pass
-    return {"status": "disconnected", "ip": None}
+    _tailscale_cache = result
+    _tailscale_ts = now
+    return result
 
 
 async def collect() -> dict:
@@ -124,8 +135,10 @@ async def collect() -> dict:
         _prev_net = net_io
         _prev_ts = now
 
-    ssid, signal, ping, ip_local, freq = await asyncio.gather(
-        _get_ssid(), _get_signal(), _get_ping(), _get_ip_local(), _get_frequency()
+    # Tout en parallèle : iw link (SSID+freq), signal /proc, ping, IP locale, IP publique, tailscale
+    (ssid, freq), signal, ping, ip_local, ip_public, tailscale = await asyncio.gather(
+        _get_wifi_info(), _get_signal(), _get_ping(),
+        _get_ip_local(), _get_ip_public(), _get_tailscale()
     )
 
     signal_percent = min(max((signal + 100) * 2, 0), 100) if signal is not None else None
@@ -136,11 +149,11 @@ async def collect() -> dict:
         "signal_percent": signal_percent,
         "frequency_mhz": freq,
         "ip_local": ip_local,
-        "ip_public": await _get_ip_public(),
+        "ip_public": ip_public,
         "download_bps": download_bps,
         "upload_bps": upload_bps,
         "ping_ms": ping,
-        "tailscale": await _get_tailscale(),
+        "tailscale": tailscale,
     }
 
 
@@ -151,7 +164,7 @@ async def collect_wifi_scan() -> dict:
 
     networks = []
     seen = set()
-    current_ssid = await _get_ssid()
+    current_ssid, _ = await _get_wifi_info()
 
     for line in out.splitlines():
         parts = line.split(":")
