@@ -25,10 +25,9 @@ html, body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  touch-action: pan-y;
-  -ms-touch-action: pan-y;
+  touch-action: auto;
   background: var(--bg);
-  background-image: url('/wallpapers/wallpaper.png');
+  background-image: url('/wallpapers/current.png');
   background-size: cover;
   background-position: center;
   font-family: var(--font);
@@ -44,10 +43,10 @@ body::before {
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(10, 13, 18, 0.92) 0%,
-    rgba(13, 17, 23, 0.85) 30%,
-    rgba(13, 17, 23, 0.85) 70%,
-    rgba(10, 13, 18, 0.92) 100%
+    rgba(10, 13, 18, 0.78) 0%,
+    rgba(13, 17, 23, 0.62) 30%,
+    rgba(13, 17, 23, 0.62) 70%,
+    rgba(10, 13, 18, 0.78) 100%
   );
   pointer-events: none;
   z-index: -1;
@@ -62,23 +61,27 @@ body::before {
 #page-container {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overflow: hidden;
+  position: relative;
 }
-#page-container::-webkit-scrollbar { display: none; }
+
+#page-track {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
 
 .page {
-  width: 100%;
+  width: 100vw;
+  min-width: 100vw;
   height: 100vh;
-  min-height: 100vh;
-  scroll-snap-align: start;
   padding: 40px 40px 30px;
   display: flex;
   flex-direction: column;
   gap: 30px;
-  overflow-y: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
 }
 .page::-webkit-scrollbar { display: none; }
@@ -97,13 +100,13 @@ body::before {
 }
 #page-main > .separator { flex-shrink: 0; margin: 10px 40px; }
 #page-main > .card-row {
-  height: 950px;
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-height: 0;
   margin: 20px 0;
 }
 #page-main > .gauge-card.hero {
-  height: 950px;
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-height: 0;
   margin: 10px 0;
 }
 #page-main > .footer {
@@ -436,13 +439,18 @@ body::before {
 /* Navigation dots */
 #page-dots {
   position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 12px;
   z-index: 100;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  padding: 10px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
 }
 .dot {
   width: 8px;
@@ -457,7 +465,7 @@ body::before {
   opacity: 1;
   background: var(--blue);
   box-shadow: 0 0 8px var(--blue);
-  height: 24px;
+  width: 24px;
   border-radius: 4px;
 }
 

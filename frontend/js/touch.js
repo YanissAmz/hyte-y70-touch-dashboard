@@ -1,90 +1,109 @@
 let inactivityTimer;
 const INACTIVITY_TIMEOUT = 30000;
+const SWIPE_THRESHOLD = 40;
+
+let currentPage = 0;
+let totalPages = 0;
+let track, pages;
 
 function resetInactivity() {
   clearTimeout(inactivityTimer);
-  inactivityTimer = setTimeout(() => {
-    navigateTo('page-main');
-  }, INACTIVITY_TIMEOUT);
+  // Don't auto-return when on browser or launcher page
+  if (currentPage >= totalPages - 2) return;
+  inactivityTimer = setTimeout(() => goToPage(0), INACTIVITY_TIMEOUT);
+}
+
+function goToPage(index) {
+  if (index < 0) index = totalPages - 1;
+  if (index >= totalPages) index = 0;
+  currentPage = index;
+  track.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+  track.style.transform = 'translateX(-' + (currentPage * 100) + 'vw)';
+  updateDots();
 }
 
 function navigateTo(pageId) {
-  const container = document.getElementById('page-container');
-  const target = document.getElementById(pageId);
-  if (container && target) {
-    const pageIndex = Array.from(container.children).indexOf(target);
-    if (pageIndex >= 0) {
-      container.scrollTo({ top: pageIndex * container.clientHeight, behavior: 'smooth' });
-    }
-  }
+  const idx = pages.findIndex(p => p.id === pageId);
+  if (idx >= 0) goToPage(idx);
+}
+
+function updateDots() {
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('active', i === currentPage);
+  });
 }
 
 function initTouch() {
-  const container = document.getElementById('page-container');
+  track = document.getElementById('page-track');
+  pages = Array.from(track.querySelectorAll('.page'));
+  totalPages = pages.length;
 
+  // Inactivity reset
   document.addEventListener('touchstart', resetInactivity, { passive: true });
-  document.addEventListener('mousedown', resetInactivity);
   document.addEventListener('click', resetInactivity);
 
-  // Card tap navigation
-  document.querySelectorAll('[data-link]').forEach(card => {
-    let touchStart = { x: 0, y: 0, t: 0 };
+  // Swipe detection — only intercept horizontal swipes for page navigation
+  // Everything else (taps, vertical scroll, buttons) stays native
+  let startX = 0, startY = 0;
+  let decided = false, isHorizontal = false;
 
-    card.addEventListener('touchstart', e => {
-      touchStart = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-        t: Date.now()
-      };
-    }, { passive: true });
+  document.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    decided = false;
+    isHorizontal = false;
+  }, { passive: true });
 
-    card.addEventListener('touchend', e => {
-      const dx = Math.abs(e.changedTouches[0].clientX - touchStart.x);
-      const dy = Math.abs(e.changedTouches[0].clientY - touchStart.y);
-      if (Date.now() - touchStart.t < 300 && dx < 15 && dy < 15) {
-        e.preventDefault();
-        navigateTo(card.dataset.link);
+  document.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+
+    if (!decided && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      decided = true;
+      isHorizontal = Math.abs(dx) > Math.abs(dy);
+      if (isHorizontal) {
+        track.style.transition = 'none';
       }
-    });
+    }
 
-    // Mouse fallback for desktop testing
+    if (isHorizontal) {
+      e.preventDefault();
+      const offset = -(currentPage * window.innerWidth) + dx;
+      track.style.transform = 'translateX(' + offset + 'px)';
+    }
+    // Vertical movement: let browser handle natively (page scroll)
+  }, { passive: false });
+
+  document.addEventListener('touchend', e => {
+    if (!isHorizontal) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      goToPage(dx < 0 ? currentPage + 1 : currentPage - 1);
+    } else {
+      goToPage(currentPage); // snap back
+    }
+  }, { passive: true });
+
+  // Card navigation via native click (data-link)
+  document.querySelectorAll('[data-link]').forEach(card => {
     card.style.cursor = 'pointer';
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', e => {
       e.stopPropagation();
       navigateTo(card.dataset.link);
     });
   });
 
   // Home button
-  document.getElementById('home-btn').addEventListener('click', () => {
-    navigateTo('page-main');
-  });
-  document.getElementById('home-btn').addEventListener('touchend', (e) => {
-    e.preventDefault();
-    navigateTo('page-main');
-  });
+  document.getElementById('home-btn').addEventListener('click', () => goToPage(0));
 
   // Dot navigation
   document.querySelectorAll('.dot').forEach(dot => {
     dot.addEventListener('click', () => navigateTo(dot.dataset.page));
-    dot.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      navigateTo(dot.dataset.page);
-    });
   });
 
-  // Track current page via scroll position
-  if (container) {
-    container.addEventListener('scroll', () => {
-      const pageHeight = container.clientHeight;
-      const currentPage = Math.round(container.scrollTop / pageHeight);
-      const pages = container.querySelectorAll('.page');
-      document.querySelectorAll('.dot').forEach((d, i) => {
-        d.classList.toggle('active', i === currentPage);
-      });
-    }, { passive: true });
-  }
-
+  updateDots();
   resetInactivity();
 }
 

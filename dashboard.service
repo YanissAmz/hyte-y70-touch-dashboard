@@ -7,7 +7,7 @@ Type=simple
 Environment=DISPLAY=:0
 WorkingDirectory=/home/yaniss/dashboard
 ExecStart=/home/yaniss/dashboard/scripts/start.sh
-ExecStop=/bin/bash -c 'pkill -f "uvicorn backend.main"; pkill -f "chromium.*8070"'
+ExecStop=/bin/bash -c 'pkill -f "uvicorn backend.main"; pkill -f "webview.py"'
 Restart=on-failure
 RestartSec=5
 

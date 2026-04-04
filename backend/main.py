@@ -14,9 +14,22 @@ logging.basicConfig(level=logging.WARNING)
 scheduler = Scheduler()
 
 
+async def _ensure_wallpaper():
+    """Generate current.png from first available wallpaper if missing."""
+    current = WALLPAPERS_DIR / "current.png"
+    if current.exists():
+        return
+    for f in sorted(WALLPAPERS_DIR.iterdir()):
+        if f.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp") and f.name != "current.png":
+            from backend.controllers.wallpaper import change_wallpaper
+            await change_wallpaper(f.name)
+            break
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     gpu.init()
+    await _ensure_wallpaper()
     scheduler.start()
     yield
     scheduler.stop()

@@ -13,8 +13,9 @@ def _send_led_colors(channel: int, r: int, g: int, b: int):
         with serial.Serial(SERIAL_DEVICE, SERIAL_BAUD, timeout=1) as ser:
             ser.write(header + grb_data)
             ser.flush()
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.warning(f"LED serial error: {e}")
 
 
 async def set_color(r: int, g: int, b: int):

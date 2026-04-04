@@ -31,21 +31,22 @@
     });
 
     function navigateTo(pageId) {
-      var container = document.getElementById('page-container');
-      var target = document.getElementById(pageId);
-      if (container && target) {
-        var pages = container.querySelectorAll('.page');
-        for (var i = 0; i < pages.length; i++) {
-          if (pages[i] === target) {
-            container.scrollTo({ top: i * container.clientHeight, behavior: 'smooth' });
-            return;
-          }
+      // Stub — real navigateTo is defined in touch.js after DOMContentLoaded
+      // This handles onclick attributes that fire before touch.js loads
+      var track = document.getElementById('page-track');
+      if (!track) return;
+      var pages = track.querySelectorAll('.page');
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].id === pageId) {
+          track.style.transform = 'translateX(-' + (i * 100) + 'vw)';
+          return;
         }
       }
     }
   </script>
   <div id="app">
     <div id="page-container">
+      <div id="page-track">
 
       <!-- PAGE 1: MAIN DASHBOARD -->
       <section id="page-main" class="page">
@@ -437,6 +438,7 @@
         </div>
       </section>
 
+      </div>
     </div>
 
     <!-- Navigation -->
