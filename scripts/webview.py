@@ -109,6 +109,7 @@ class DashboardWindow(Gtk.Window):
         screen = self.get_screen()
         target = find_hyte_monitor()
         self.fullscreen_on_monitor(screen, target)
+        self.present()  # force X11 focus/raise
 
     def enter_browser_mode(self, url: str):
         """Navigue vers une URL externe — mode navigateur."""
