@@ -290,8 +290,6 @@
 .power-profiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .power-btn { padding: 14px 8px; font-size: 20px; }
 .power-btn.active { background: rgba(88,166,255,0.15); border-color: var(--blue); color: var(--blue); }
-.toggle-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 20px; color: var(--grey); cursor: pointer; }
-.toggle-row input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--blue); }
 .control-btn.desktop-mode-btn {
   display: flex;
   align-items: center;

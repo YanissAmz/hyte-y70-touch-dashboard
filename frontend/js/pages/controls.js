@@ -143,17 +143,6 @@ function initControls() {
   });
   refreshPowerProfile();
 
-  // Haptic LED toggle (persist in localStorage)
-  const haptic = document.getElementById('haptic-toggle');
-  if (haptic) {
-    haptic.checked = localStorage.getItem('hapticLED') === '1';
-    window.hapticLED = haptic.checked;
-    haptic.addEventListener('change', () => {
-      window.hapticLED = haptic.checked;
-      localStorage.setItem('hapticLED', haptic.checked ? '1' : '0');
-    });
-  }
-
   // Vérifier le statut OpenRGB
   fetch('/api/leds/status').then(r => r.json()).then(data => {
     const badge = document.getElementById('led-status-badge');

@@ -55,9 +55,6 @@ function spawnRipple(x, y) {
 
 function simulateTap(x, y) {
   spawnRipple(x, y);
-  if (window.hapticLED) {
-    fetch('/api/leds/tap', { method: 'POST', keepalive: true }).catch(() => {});
-  }
   var el = document.elementFromPoint(x, y);
   if (!el) return;
 
@@ -95,7 +92,6 @@ function initTouch() {
   track = document.getElementById('page-track');
   pages = Array.from(track.querySelectorAll('.page'));
   totalPages = pages.length;
-  window.hapticLED = localStorage.getItem('hapticLED') === '1';
 
   document.addEventListener('touchstart', resetInactivity, { passive: true });
 

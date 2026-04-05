@@ -124,13 +124,6 @@ async def leds_status():
     return get_status()
 
 
-@app.post("/api/leds/tap")
-async def leds_tap():
-    from backend.controllers.leds import haptic_tap
-    await haptic_tap()
-    return {"ok": True}
-
-
 @app.get("/api/power")
 async def power_get():
     from backend.controllers.power import get_profile
