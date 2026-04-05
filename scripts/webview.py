@@ -43,11 +43,9 @@ def find_dp0_xrandr_index():
         for line in out.splitlines():
             line = line.strip()
             # Format: " 0: +*DP-0 1100/344x3840/99+3840+0  DP-0"
-            if "DP-0" in line and line[0].isdigit() or (line and line[0:2].strip().isdigit()):
-                # Extract leading index before ':'
-                parts = line.split(":", 1)
-                if len(parts) == 2 and "DP-0" in parts[1]:
-                    return int(parts[0].strip())
+            parts = line.split(":", 1)
+            if len(parts) == 2 and parts[0].strip().isdigit() and "DP-0" in parts[1]:
+                return int(parts[0].strip())
     except Exception:
         pass
     return 0
@@ -121,7 +119,13 @@ class DashboardWindow(Gtk.Window):
         wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.ALWAYS)
         wk.set_enable_javascript(True)
         wk.set_enable_page_cache(False)
-        self.webview.set_zoom_level(0.5)
+        # Zoom adaptatif : le frontend est calibré pour une viewport CSS de 1100px.
+        # WebKit reçoit le logical width de GTK (= physique / scale). Donc zoom = 1/scale
+        # pour que la CSS viewport reste à 1100 quel que soit le scale GNOME (qui change
+        # quand une TV 4K est branchée en HDMI primary).
+        screen = Gdk.Screen.get_default()
+        scale = screen.get_monitor_scale_factor(find_hyte_monitor()) or 1
+        self.webview.set_zoom_level(1.0 / scale)
         self.webview.load_uri(DASHBOARD_URL)
 
         self.add(self.webview)

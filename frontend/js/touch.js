@@ -97,15 +97,12 @@ function initTouch() {
 
   var startX = 0, startY = 0, lastY = 0;
   var decided = false, isHorizontal = false, moved = false;
-  var touchX = 0, touchY = 0;
 
   document.addEventListener('touchstart', function(e) {
     var t = e.touches[0];
     startX = t.clientX;
     startY = t.clientY;
     lastY = t.clientY;
-    touchX = t.clientX;
-    touchY = t.clientY;
     decided = false;
     isHorizontal = false;
     moved = false;
@@ -133,7 +130,6 @@ function initTouch() {
       // Vertical scroll within current page
       var page = pages[currentPage];
       if (page) {
-        // Pour les pages avec scroll interne (ex: ollama-messages), cibler le bon container
         var scrollTarget = page.querySelector('.ollama-messages') || page;
         scrollTarget.scrollTop -= (t.clientY - lastY);
       }
@@ -143,14 +139,13 @@ function initTouch() {
   }, { passive: false });
 
   document.addEventListener('touchend', function(e) {
+    var t = e.changedTouches[0];
+    var dx = t.clientX - startX;
     if (!moved) {
-      // Use touchend coords (more accurate than touchstart for tap target)
-      var t = e.changedTouches[0];
       simulateTap(t.clientX, t.clientY);
       return;
     }
     if (isHorizontal) {
-      var dx = e.changedTouches[0].clientX - startX;
       if (Math.abs(dx) > SWIPE_THRESHOLD) {
         goToPage(dx < 0 ? currentPage + 1 : currentPage - 1);
       } else {

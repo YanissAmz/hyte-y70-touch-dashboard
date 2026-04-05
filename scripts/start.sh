@@ -9,33 +9,33 @@ while ! DISPLAY=:0 xdpyinfo &>/dev/null 2>&1; do
 done
 sleep 3
 
-# Configure screens: adapt to TV being plugged in or not
+# Configure screens : HDMI primary (pour que GNOME y mette son top bar + icônes système)
+# + DP-0 rotate right à droite de HDMI. Le dashboard est pinné sur DP-0 via EWMH
+# (_NET_WM_FULLSCREEN_MONITORS) dans webview.py → il reste sur HYTE même si HDMI est primary.
 if xrandr | grep -q "HDMI-0 connected"; then
     xrandr --output HDMI-0 --auto --primary \
            --output DP-0 --auto --right-of HDMI-0 --rotate right
 else
+    xrandr --output HDMI-0 --off 2>/dev/null
     xrandr --output DP-0 --auto --rotate right --primary
 fi
 sleep 2
 
-# Fix touch input rotation — matrix depends on single vs dual monitor
-# In dual-monitor, DP-0 is right of HDMI: need to scale+offset coords to DP-0
-_apply_touch_matrix() {
-    local SCREEN_W SCREEN_H DP0_X DP0_W DP0_H C1 C2
-    SCREEN_W=$(xrandr | grep "^Screen 0" | grep -oP 'current \K[0-9]+')
-    SCREEN_H=$(xrandr | grep "^Screen 0" | grep -oP 'current [0-9]+ x \K[0-9]+')
-    DP0_X=$(xrandr | grep "^DP-0 connected" | grep -oP '\+\K[0-9]+(?=\+)')
-    DP0_W=$(xrandr | grep "^DP-0 connected" | grep -oP '[0-9]+(?=x[0-9]+\+)')
-    DP0_H=$(xrandr | grep "^DP-0 connected" | grep -oP '(?<=x)[0-9]+(?=\+)')
-    # Matrix: [0, DP0_W/SCREEN_W, DP0_X/SCREEN_W, -1, 0, 1, 0, 0, 1]
-    C1=$(python3 -c "print(f'{$DP0_W/$SCREEN_W:.6f}')")
-    C2=$(python3 -c "print(f'{$DP0_X/$SCREEN_W:.6f}')")
-    for name in "ILITEK       ILITEK-TOUCH" "ILITEK       ILITEK-TOUCH Mouse"; do
-        xinput set-prop "$name" "Coordinate Transformation Matrix" \
-            0 "$C1" "$C2" -1 0 1 0 0 1 2>/dev/null
+# Map ILITEK touch device to DP-0 output (handles rotation + multi-monitor offset automatically).
+# IMPORTANT: xorg.conf.d/99-ilitek-touch.conf must NOT set CalibrationMatrix, else the two
+# matrices compose and the touch is double-rotated.
+_map_touch() {
+    for id in $(xinput list --id-only 2>/dev/null); do
+        name=$(xinput list --name-only "$id" 2>/dev/null)
+        case "$name" in
+            *ILITEK*ILITEK-TOUCH*)
+                xinput set-prop "$id" "libinput Calibration Matrix" 1 0 0 0 1 0 0 0 1 2>/dev/null
+                xinput --map-to-output "$id" DP-0 2>/dev/null
+                ;;
+        esac
     done
 }
-_apply_touch_matrix
+_map_touch
 
 # Disable screen blanking
 xset s off
@@ -66,8 +66,8 @@ sleep 3
 # Launch WebKit fullscreen viewer on HYTE (système python3, pas le venv — gi est une lib système)
 /usr/bin/python3 "$DASHBOARD_DIR/scripts/webview.py" &
 
-# Re-apply touch matrix after GNOME settles (GNOME can reset it after login)
+# Re-apply touch mapping after GNOME settles (GNOME can reset it after login)
 sleep 8
-_apply_touch_matrix
+_map_touch
 
 wait $BACKEND_PID

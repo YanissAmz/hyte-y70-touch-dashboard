@@ -8,12 +8,37 @@ import asyncio
 import colorsys
 import logging
 import threading
+import time
 
 _client = None
 _effect_task: asyncio.Task | None = None
 _current_effect: str = "static"
 # Lock pour éviter la race condition I2C (rainbow thread vs set_color thread)
 _led_lock = threading.Lock()
+# Délai inter-écriture I2C pour laisser le bus SMBus se stabiliser entre les 2 sticks RAM
+_I2C_SETTLE_S = 0.020
+
+
+def _is_i2c_device(device) -> bool:
+    """Identifie les devices I2C (RAM Corsair/Dominator) qui partagent le bus SMBus."""
+    name = getattr(device, "name", "") or ""
+    return ("Corsair" in name) or ("Dominator" in name) or ("DIMM" in name)
+
+
+def _write_device(fn, device, *args):
+    """Écrit sur un device avec retry. Sérialise les devices I2C via un petit sleep."""
+    if _is_i2c_device(device):
+        time.sleep(_I2C_SETTLE_S)
+    for attempt in range(2):
+        try:
+            fn(device, *args)
+            return
+        except Exception as e:
+            if attempt == 0 and _is_i2c_device(device):
+                time.sleep(_I2C_SETTLE_S * 2)
+                continue
+            logging.debug(f"LED write {device.name}: {e}")
+            return
 
 
 # ── Connexion ────────────────────────────────────────────────────────────────
@@ -94,7 +119,7 @@ def _rainbow_frame_sync(offset: float):
                 n = len(device.leds)
                 if n == 0:
                     continue
-                _set_device_colors_safe(device, _rainbow_colors(n, offset))
+                _write_device(lambda d, c: d.set_colors(c), device, _rainbow_colors(n, offset))
 
 
 async def _rainbow_loop():
@@ -118,7 +143,7 @@ def _breathing_frame_sync(r: int, g: int, b: int, brightness: float):
         for device in client.devices:
             modes = [m.name for m in device.modes]
             if "Direct" in modes and len(modes) == 1:
-                _set_device_color_safe(device, color)
+                _write_device(lambda d, c: d.set_color(c), device, color)
 
 
 async def _breathing_loop(r: int, g: int, b: int):
@@ -254,7 +279,7 @@ def _set_color_all_sync(r: int, g: int, b: int):
                     d.set_mode("Direct")
                 except Exception:
                     pass
-            _set_device_color_safe(d, color)
+            _write_device(lambda dv, c: dv.set_color(c), d, color)
 
 
 async def turn_off():

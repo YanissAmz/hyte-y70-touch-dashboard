@@ -43,6 +43,7 @@ function initControls() {
     const ctx = canvas.getContext('2d');
     const cx = 150, cy = 150, radius = 140;
 
+    // Roue hue pure — saturation 100% partout pour des couleurs LED vibrantes
     for (let angle = 0; angle < 360; angle++) {
       const startAngle = (angle - 1) * Math.PI / 180;
       const endAngle = (angle + 1) * Math.PI / 180;
@@ -50,10 +51,7 @@ function initControls() {
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, radius, startAngle, endAngle);
       ctx.closePath();
-      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-      gradient.addColorStop(0, '#fff');
-      gradient.addColorStop(1, `hsl(${angle}, 100%, 50%)`);
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = `hsl(${angle}, 100%, 50%)`;
       ctx.fill();
     }
 
