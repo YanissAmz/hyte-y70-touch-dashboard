@@ -28,7 +28,7 @@ INTERVALS = {
     "weather": 900,
     "system": 60,
     "processes": 10,
-    "ollama": 30,
+    "ollama": 60,
 }
 
 # Hardware specs (for display)

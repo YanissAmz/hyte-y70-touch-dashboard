@@ -26,8 +26,9 @@ class Scheduler:
     async def _collector_loop(self, name: str, collect_fn, interval: float):
         while True:
             try:
-                data = await collect_fn()
-                await self.broadcast(name, data)
+                if self.clients:
+                    data = await collect_fn()
+                    await self.broadcast(name, data)
             except Exception as e:
                 logger.warning(f"Collector {name} error: {e}")
             await asyncio.sleep(interval)

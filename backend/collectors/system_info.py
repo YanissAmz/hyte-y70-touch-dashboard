@@ -1,10 +1,17 @@
 import asyncio
 import platform
+import subprocess
 import time
 
 import psutil
 
 from backend.config import HW_CPU_MODEL, HW_GPU_MODEL, HW_RAM_MODEL, HW_DISK_MODEL
+
+# Statique — ne change jamais, on le lit une seule fois
+try:
+    _OS_NAME = subprocess.check_output(["lsb_release", "-ds"], stderr=subprocess.DEVNULL).decode().strip()
+except Exception:
+    _OS_NAME = "Ubuntu"
 
 
 async def _run_cmd(cmd: list[str]) -> str:
@@ -41,7 +48,7 @@ async def collect() -> dict:
         "hostname": platform.node(),
         "uptime_s": uptime_s,
         "kernel": platform.release(),
-        "os": await _run_cmd(["lsb_release", "-ds"]) or "Ubuntu",
+        "os": _OS_NAME,
         "cpu_model": HW_CPU_MODEL,
         "gpu_model": HW_GPU_MODEL,
         "ram_model": HW_RAM_MODEL,
