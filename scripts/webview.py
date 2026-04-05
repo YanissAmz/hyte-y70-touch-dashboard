@@ -22,17 +22,69 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 def find_hyte_monitor():
-    display = Gdk.Display.get_default()
-    n = display.get_n_monitors()
+    # Use Gdk.Screen (same API as fullscreen_on_monitor) for consistent indices
+    screen = Gdk.Screen.get_default()
+    n = screen.get_n_monitors()
     for i in range(n):
-        mon = display.get_monitor(i)
-        model = mon.get_model() or ""
-        geo = mon.get_geometry()
-        if "DP-0" in model or "DP0" in model:
+        name = screen.get_monitor_plug_name(i) or ""
+        geo = screen.get_monitor_geometry(i)
+        if "DP-0" in name or "DP0" in name:
             return i
-        if geo.width == 550 or geo.width == 1100:
+        # DP-0 is portrait 1100x3840 — in GTK logical coords (DPR=2) it's 550x1920
+        if geo.width in (550, 1100) and geo.height in (1920, 3840):
             return i
     return n - 1
+
+
+def find_dp0_xrandr_index():
+    """Parse xrandr --listmonitors to find DP-0's monitor index (used by _NET_WM_FULLSCREEN_MONITORS)."""
+    try:
+        out = subprocess.check_output(["xrandr", "--listmonitors"]).decode()
+        for line in out.splitlines():
+            line = line.strip()
+            # Format: " 0: +*DP-0 1100/344x3840/99+3840+0  DP-0"
+            if "DP-0" in line and line[0].isdigit() or (line and line[0:2].strip().isdigit()):
+                # Extract leading index before ':'
+                parts = line.split(":", 1)
+                if len(parts) == 2 and "DP-0" in parts[1]:
+                    return int(parts[0].strip())
+    except Exception:
+        pass
+    return 0
+
+
+def pin_fullscreen_to_monitor(xid: int, mon_idx: int):
+    """Send _NET_WM_FULLSCREEN_MONITORS client message to constrain fullscreen to a specific xrandr monitor."""
+    try:
+        from Xlib import display as xdisplay, X
+        d = xdisplay.Display()
+        root = d.screen().root
+        win = d.create_resource_object('window', xid)
+        atom_fsm = d.intern_atom('_NET_WM_FULLSCREEN_MONITORS')
+        atom_state = d.intern_atom('_NET_WM_STATE')
+        atom_full = d.intern_atom('_NET_WM_STATE_FULLSCREEN')
+        mask = X.SubstructureRedirectMask | X.SubstructureNotifyMask
+        # Remove fullscreen first
+        root.send_event(xdisplay.event.ClientMessage(
+            window=win, client_type=atom_state,
+            data=(32, [0, atom_full, 0, 0, 0])
+        ), event_mask=mask, propagate=False)
+        d.sync()
+        # Set fullscreen monitor hint (top, bottom, left, right, source)
+        root.send_event(xdisplay.event.ClientMessage(
+            window=win, client_type=atom_fsm,
+            data=(32, [mon_idx, mon_idx, mon_idx, mon_idx, 1])
+        ), event_mask=mask, propagate=False)
+        d.sync()
+        # Re-enable fullscreen
+        root.send_event(xdisplay.event.ClientMessage(
+            window=win, client_type=atom_state,
+            data=(32, [1, atom_full, 0, 0, 0])
+        ), event_mask=mask, propagate=False)
+        d.sync()
+        d.close()
+    except Exception as e:
+        print(f"pin_fullscreen_to_monitor error: {e}")
 
 
 class DashboardWindow(Gtk.Window):
@@ -109,7 +161,13 @@ class DashboardWindow(Gtk.Window):
         screen = self.get_screen()
         target = find_hyte_monitor()
         self.fullscreen_on_monitor(screen, target)
-        self.present()  # force X11 focus/raise
+        self.present()
+        # Pin to xrandr monitor via EWMH (bypass GTK HiDPI coordinate bug in multi-monitor)
+        gdk_win = self.get_window()
+        if gdk_win is not None:
+            xid = gdk_win.get_xid()
+            mon_idx = find_dp0_xrandr_index()
+            GLib.timeout_add(300, lambda: (pin_fullscreen_to_monitor(xid, mon_idx), False)[1])
 
     def enter_browser_mode(self, url: str):
         """Navigue vers une URL externe — mode navigateur."""
