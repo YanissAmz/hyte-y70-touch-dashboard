@@ -22,11 +22,12 @@ function goToPage(index) {
   var targetPage = pages[currentPage];
   if (targetPage) {
     targetPage.classList.remove('page-entering');
-    void targetPage.offsetWidth; // reflow
-    targetPage.classList.add('page-entering');
-    targetPage.addEventListener('animationend', function() {
-      targetPage.classList.remove('page-entering');
-    }, { once: true });
+    requestAnimationFrame(function() {
+      targetPage.classList.add('page-entering');
+      targetPage.addEventListener('animationend', function() {
+        targetPage.classList.remove('page-entering');
+      }, { once: true });
+    });
   }
 }
 
@@ -143,7 +144,9 @@ function initTouch() {
 
   document.addEventListener('touchend', function(e) {
     if (!moved) {
-      simulateTap(touchX, touchY);
+      // Use touchend coords (more accurate than touchstart for tap target)
+      var t = e.changedTouches[0];
+      simulateTap(t.clientX, t.clientY);
       return;
     }
     if (isHorizontal) {
