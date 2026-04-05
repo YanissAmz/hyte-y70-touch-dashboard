@@ -124,6 +124,36 @@ function initControls() {
     });
   }
 
+  // Power profiles
+  function refreshPowerProfile() {
+    fetch('/api/power').then(r => r.json()).then(data => {
+      document.querySelectorAll('.power-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.profile === data.current);
+      });
+    }).catch(() => {});
+  }
+  document.querySelectorAll('.power-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      fetch('/api/power', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: btn.dataset.profile })
+      }).then(() => refreshPowerProfile());
+    });
+  });
+  refreshPowerProfile();
+
+  // Haptic LED toggle (persist in localStorage)
+  const haptic = document.getElementById('haptic-toggle');
+  if (haptic) {
+    haptic.checked = localStorage.getItem('hapticLED') === '1';
+    window.hapticLED = haptic.checked;
+    haptic.addEventListener('change', () => {
+      window.hapticLED = haptic.checked;
+      localStorage.setItem('hapticLED', haptic.checked ? '1' : '0');
+    });
+  }
+
   // Vérifier le statut OpenRGB
   fetch('/api/leds/status').then(r => r.json()).then(data => {
     const badge = document.getElementById('led-status-badge');

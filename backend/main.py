@@ -32,6 +32,12 @@ async def lifespan(app: FastAPI):
     gpu.init()
     await _ensure_wallpaper()
     scheduler.start()
+    # Restaurer le dernier état LED sauvegardé
+    try:
+        from backend.controllers.leds import restore_state
+        asyncio.create_task(restore_state())
+    except Exception as e:
+        logging.warning(f"LED restore_state failed: {e}")
     yield
     scheduler.stop()
     gpu.shutdown()
@@ -116,6 +122,25 @@ async def screen_brightness(data: dict = Body(...)):
 async def leds_status():
     from backend.controllers.leds import get_status
     return get_status()
+
+
+@app.post("/api/leds/tap")
+async def leds_tap():
+    from backend.controllers.leds import haptic_tap
+    await haptic_tap()
+    return {"ok": True}
+
+
+@app.get("/api/power")
+async def power_get():
+    from backend.controllers.power import get_profile
+    return get_profile()
+
+
+@app.post("/api/power")
+async def power_set(data: dict = Body(...)):
+    from backend.controllers.power import set_profile
+    return set_profile(data.get("profile", ""))
 
 
 @app.post("/api/desktop-mode")

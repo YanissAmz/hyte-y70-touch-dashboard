@@ -10,31 +10,16 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib
 
+sys.path.insert(0, os.path.dirname(__file__))
+from monitor_utils import get_hyte_geometry
+
 SIGNAL_FILE = pathlib.Path("/tmp/hyte-desktop-mode")
-# Détection du moniteur HYTE (DP-0) pour positionner le bouton
-HYTE_WIDTH = 1100
-HYTE_HEIGHT = 3840
 
 
 def find_hyte_geometry():
-    """Retourne (x_offset, y_offset, width, height) du moniteur HYTE."""
-    display = Gdk.Display.get_default()
-    n = display.get_n_monitors()
-    for i in range(n):
-        mon = display.get_monitor(i)
-        model = mon.get_model() or ""
-        geo = mon.get_geometry()
-        sf = mon.get_scale_factor()
-        # Chercher DP-0 ou un écran de la bonne taille
-        if "DP-0" in model or "DP0" in model:
-            return geo.x, geo.y, geo.width * sf, geo.height * sf
-        if geo.width in (550, 1100):
-            return geo.x, geo.y, geo.width * sf, geo.height * sf
-    # Fallback : dernier moniteur
-    mon = display.get_monitor(n - 1)
-    geo = mon.get_geometry()
-    sf = mon.get_scale_factor()
-    return geo.x, geo.y, geo.width * sf, geo.height * sf
+    """Retourne (x_offset, y_offset, width_physical, height_physical) du moniteur HYTE."""
+    x, y, w, h, scale = get_hyte_geometry()
+    return x, y, w * scale, h * scale
 
 
 class FloatButton(Gtk.Window):

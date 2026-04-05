@@ -365,6 +365,7 @@
             <button class="effect-btn" data-effect="fire">🔥 Fire</button>
             <button class="effect-btn" data-effect="energy">⚡ Energy</button>
             <button class="effect-btn" data-effect="stack">📚 Stack</button>
+            <button class="effect-btn" data-effect="reactive">📊 Réactif CPU</button>
             <button class="effect-btn" data-effect="static">◼ Statique</button>
           </div>
 
@@ -398,6 +399,19 @@
             <input type="range" id="brightness-slider" min="10" max="100" value="80" step="5">
             <span id="brightness-value">80%</span>
           </div>
+        </div>
+
+        <div class="control-card">
+          <h3>Profil d'alimentation</h3>
+          <div class="power-profiles">
+            <button class="control-btn power-btn" data-profile="power-saver">🔋 Éco</button>
+            <button class="control-btn power-btn" data-profile="balanced">⚖️ Équilibré</button>
+            <button class="control-btn power-btn" data-profile="performance">⚡ Perf</button>
+          </div>
+          <label class="toggle-row">
+            <input type="checkbox" id="haptic-toggle">
+            <span>Feedback LED au tap</span>
+          </label>
         </div>
 
         <div class="control-card control-card-desktop">

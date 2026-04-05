@@ -6,17 +6,43 @@ isolation des erreurs par device.
 """
 import asyncio
 import colorsys
+import json
 import logging
+import os
+import pathlib
 import threading
 import time
 
 _client = None
 _effect_task: asyncio.Task | None = None
 _current_effect: str = "static"
+_current_color: tuple = (255, 255, 255)
 # Lock pour éviter la race condition I2C (rainbow thread vs set_color thread)
 _led_lock = threading.Lock()
 # Délai inter-écriture I2C pour laisser le bus SMBus se stabiliser entre les 2 sticks RAM
 _I2C_SETTLE_S = 0.020
+# Persistance : dernier état LED restauré au démarrage
+_STATE_FILE = pathlib.Path(os.path.expanduser("~/.cache/hyte-dashboard/leds.json"))
+
+
+def _save_state():
+    try:
+        _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _STATE_FILE.write_text(json.dumps({
+            "effect": _current_effect,
+            "color": list(_current_color),
+        }))
+    except Exception as e:
+        logging.debug(f"LED state save: {e}")
+
+
+def _load_state() -> dict | None:
+    try:
+        if _STATE_FILE.exists():
+            return json.loads(_STATE_FILE.read_text())
+    except Exception as e:
+        logging.debug(f"LED state load: {e}")
+    return None
 
 
 def _is_i2c_device(device) -> bool:
@@ -161,10 +187,64 @@ async def _breathing_loop(r: int, g: int, b: int):
         pass
 
 
+def _load_to_rgb(load: float) -> tuple:
+    """Map charge 0-100 vers un gradient bleu→vert→jaune→rouge."""
+    load = max(0.0, min(100.0, load)) / 100.0
+    if load < 0.33:
+        # bleu → vert
+        k = load / 0.33
+        return (0, int(255 * k), int(255 * (1 - k)))
+    elif load < 0.66:
+        # vert → jaune
+        k = (load - 0.33) / 0.33
+        return (int(255 * k), 255, 0)
+    else:
+        # jaune → rouge
+        k = (load - 0.66) / 0.34
+        return (255, int(255 * (1 - k)), 0)
+
+
+def _reactive_frame_sync(r: int, g: int, b: int):
+    """Écrit la couleur réactive uniquement sur le MSI (hardware rapide).
+    La RAM garde la dernière couleur statique pour éviter le bus I2C saturé."""
+    with _led_lock:
+        from openrgb.utils import RGBColor
+        client = _get_client()
+        if client is None:
+            return
+        color = RGBColor(r, g, b)
+        for device in client.devices:
+            if _is_i2c_device(device):
+                continue  # pas de RAM
+            if "Direct" in [m.name for m in device.modes]:
+                _write_device(lambda d, c: d.set_color(c), device, color)
+
+
+async def _reactive_loop():
+    """Couleur MSI proportionnelle à la charge CPU/GPU max (mise à jour 1 Hz)."""
+    import psutil
+    try:
+        while True:
+            cpu = psutil.cpu_percent(interval=None)
+            gpu = 0.0
+            try:
+                from backend.collectors.gpu import collect as gpu_collect
+                g = await gpu_collect()
+                gpu = float(g.get("load", 0) or 0)
+            except Exception:
+                pass
+            load = max(cpu, gpu)
+            r, gc, b = _load_to_rgb(load)
+            await asyncio.to_thread(_reactive_frame_sync, r, gc, b)
+            await asyncio.sleep(1.0)
+    except asyncio.CancelledError:
+        pass
+
+
 # ── API publique ──────────────────────────────────────────────────────────────
 
 EFFECTS = {
-    # nom          : (mode hardware MSI,   animation software RAM)
+    # nom          : (mode hardware MSI,   animation software)
     "rainbow"      : ("Rainbow wave",      "rainbow"),
     "breathing"    : ("Breathing",         "breathing"),
     "color_wave"   : ("Color wave",        None),
@@ -173,6 +253,7 @@ EFFECTS = {
     "energy"       : ("Energy",            None),
     "stack"        : ("Stack",             None),
     "visor"        : ("Visor",             None),
+    "reactive"     : (None,                "reactive"),
     "static"       : (None,                None),
     "off"          : (None,                None),
 }
@@ -243,9 +324,10 @@ def _apply_effect_locked(effect: str, r: int, g: int, b: int):
 
 
 async def set_effect(effect: str, r: int = 255, g: int = 255, b: int = 255):
-    global _effect_task, _current_effect
+    global _effect_task, _current_effect, _current_color
     await _stop_effect()
     _current_effect = effect
+    _current_color = (r, g, b)
 
     await asyncio.to_thread(_apply_effect_sync, effect, r, g, b)
 
@@ -254,14 +336,19 @@ async def set_effect(effect: str, r: int = 255, g: int = 255, b: int = 255):
         _effect_task = asyncio.create_task(_rainbow_loop())
     elif sw_anim == "breathing":
         _effect_task = asyncio.create_task(_breathing_loop(r, g, b))
+    elif sw_anim == "reactive":
+        _effect_task = asyncio.create_task(_reactive_loop())
+    _save_state()
 
 
 async def set_color(r: int, g: int, b: int):
     """Couleur statique sur tous les devices — arrête tout effet en cours."""
-    global _current_effect
+    global _current_effect, _current_color
     await _stop_effect()
     _current_effect = "static"
+    _current_color = (r, g, b)
     await asyncio.to_thread(_set_color_all_sync, r, g, b)
+    _save_state()
 
 
 def _set_color_all_sync(r: int, g: int, b: int):
@@ -284,6 +371,56 @@ def _set_color_all_sync(r: int, g: int, b: int):
 
 async def turn_off():
     await set_effect("off")
+
+
+_haptic_last_ts = 0.0
+
+
+def _haptic_flash_sync():
+    """Flash ultra-court sur MSI LED[0] puis restore couleur courante.
+    Non-bloquant pour la RAM (I2C) — agit uniquement sur le MSI HID."""
+    with _led_lock:
+        from openrgb.utils import RGBColor
+        client = _get_client()
+        if client is None:
+            return
+        for device in client.devices:
+            if _is_i2c_device(device) or not device.leds:
+                continue
+            try:
+                device.leds[0].set_color(RGBColor(255, 255, 255))
+                time.sleep(0.04)
+                r, g, b = _current_color
+                device.leds[0].set_color(RGBColor(r, g, b))
+            except Exception:
+                pass
+            break  # un seul device non-I2C suffit
+
+
+async def haptic_tap():
+    """Flash LED bref à chaque tap — rate-limited à 5 Hz côté serveur."""
+    global _haptic_last_ts
+    now = time.monotonic()
+    if now - _haptic_last_ts < 0.20:
+        return
+    _haptic_last_ts = now
+    await asyncio.to_thread(_haptic_flash_sync)
+
+
+async def restore_state():
+    """Restaure le dernier état LED sauvegardé (appelé au démarrage backend)."""
+    st = _load_state()
+    if not st:
+        return
+    effect = st.get("effect", "static")
+    r, g, b = st.get("color", [255, 255, 255])
+    try:
+        if effect == "static":
+            await set_color(r, g, b)
+        else:
+            await set_effect(effect, r, g, b)
+    except Exception as e:
+        logging.warning(f"LED restore_state: {e}")
 
 
 def get_status() -> dict:

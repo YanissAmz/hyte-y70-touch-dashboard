@@ -21,19 +21,8 @@ INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000  # 5 minutes
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
-def find_hyte_monitor():
-    # Use Gdk.Screen (same API as fullscreen_on_monitor) for consistent indices
-    screen = Gdk.Screen.get_default()
-    n = screen.get_n_monitors()
-    for i in range(n):
-        name = screen.get_monitor_plug_name(i) or ""
-        geo = screen.get_monitor_geometry(i)
-        if "DP-0" in name or "DP0" in name:
-            return i
-        # DP-0 is portrait 1100x3840 — in GTK logical coords (DPR=2) it's 550x1920
-        if geo.width in (550, 1100) and geo.height in (1920, 3840):
-            return i
-    return n - 1
+sys.path.insert(0, os.path.dirname(__file__))
+from monitor_utils import find_hyte_monitor_index as find_hyte_monitor
 
 
 def find_dp0_xrandr_index():
@@ -123,16 +112,22 @@ class DashboardWindow(Gtk.Window):
         # WebKit reçoit le logical width de GTK (= physique / scale). Donc zoom = 1/scale
         # pour que la CSS viewport reste à 1100 quel que soit le scale GNOME (qui change
         # quand une TV 4K est branchée en HDMI primary).
-        screen = Gdk.Screen.get_default()
-        scale = screen.get_monitor_scale_factor(find_hyte_monitor()) or 1
-        self.webview.set_zoom_level(1.0 / scale)
+        self._apply_adaptive_zoom()
         self.webview.load_uri(DASHBOARD_URL)
 
         self.add(self.webview)
         self.connect("destroy", Gtk.main_quit)
 
+        # Recalcul du zoom quand la config multi-moniteur change (hotplug TV)
+        Gdk.Screen.get_default().connect("monitors-changed", lambda s: self._apply_adaptive_zoom())
+
         # Polling signal file pour les commandes externes (float_button, API)
         GLib.timeout_add(1500, self._check_signal)
+
+    def _apply_adaptive_zoom(self):
+        screen = Gdk.Screen.get_default()
+        scale = screen.get_monitor_scale_factor(find_hyte_monitor()) or 1
+        self.webview.set_zoom_level(1.0 / scale)
 
     def _on_js_message(self, manager, result):
         """Reçoit les messages du JS via window.webkit.messageHandlers.dashboard.postMessage()"""
