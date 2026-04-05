@@ -18,10 +18,24 @@ else
 fi
 sleep 2
 
-# Fix touch input rotation (ILITEK touchscreen doesn't auto-rotate with xrandr)
-for name in "ILITEK       ILITEK-TOUCH" "ILITEK       ILITEK-TOUCH Mouse"; do
-  xinput set-prop "$name" "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1 2>/dev/null
-done
+# Fix touch input rotation — matrix depends on single vs dual monitor
+# In dual-monitor, DP-0 is right of HDMI: need to scale+offset coords to DP-0
+_apply_touch_matrix() {
+    local SCREEN_W SCREEN_H DP0_X DP0_W DP0_H C1 C2
+    SCREEN_W=$(xrandr | grep "^Screen 0" | grep -oP 'current \K[0-9]+')
+    SCREEN_H=$(xrandr | grep "^Screen 0" | grep -oP 'current [0-9]+ x \K[0-9]+')
+    DP0_X=$(xrandr | grep "^DP-0 connected" | grep -oP '\+\K[0-9]+(?=\+)')
+    DP0_W=$(xrandr | grep "^DP-0 connected" | grep -oP '[0-9]+(?=x[0-9]+\+)')
+    DP0_H=$(xrandr | grep "^DP-0 connected" | grep -oP '(?<=x)[0-9]+(?=\+)')
+    # Matrix: [0, DP0_W/SCREEN_W, DP0_X/SCREEN_W, -1, 0, 1, 0, 0, 1]
+    C1=$(python3 -c "print(f'{$DP0_W/$SCREEN_W:.6f}')")
+    C2=$(python3 -c "print(f'{$DP0_X/$SCREEN_W:.6f}')")
+    for name in "ILITEK       ILITEK-TOUCH" "ILITEK       ILITEK-TOUCH Mouse"; do
+        xinput set-prop "$name" "Coordinate Transformation Matrix" \
+            0 "$C1" "$C2" -1 0 1 0 0 1 2>/dev/null
+    done
+}
+_apply_touch_matrix
 
 # Disable screen blanking
 xset s off
@@ -54,8 +68,6 @@ sleep 3
 
 # Re-apply touch matrix after GNOME settles (GNOME can reset it after login)
 sleep 8
-for name in "ILITEK       ILITEK-TOUCH" "ILITEK       ILITEK-TOUCH Mouse"; do
-  DISPLAY=:0 xinput set-prop "$name" "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1 2>/dev/null
-done
+_apply_touch_matrix
 
 wait $BACKEND_PID
