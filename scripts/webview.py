@@ -175,9 +175,18 @@ class DashboardWindow(Gtk.Window):
         gdk_win.resize(self._hyte_w, self._hyte_h)
 
     def _apply_adaptive_zoom(self):
+        """Compensate GNOME monitor scale + text-scaling-factor so CSS viewport
+        stays at physical 1100px regardless of user accessibility settings."""
         screen = Gdk.Screen.get_default()
         scale = screen.get_monitor_scale_factor(find_hyte_monitor()) or 1
-        self.webview.set_zoom_level(1.0 / scale)
+        text_scale = 1.0
+        try:
+            from gi.repository import Gio
+            settings = Gio.Settings.new("org.gnome.desktop.interface")
+            text_scale = settings.get_double("text-scaling-factor") or 1.0
+        except Exception:
+            pass
+        self.webview.set_zoom_level(1.0 / (scale * text_scale))
 
     def _on_js_message(self, manager, result):
         """Reçoit les messages du JS via window.webkit.messageHandlers.dashboard.postMessage()"""
