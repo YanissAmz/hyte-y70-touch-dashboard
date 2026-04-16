@@ -12,7 +12,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.1')
 from gi.repository import Gtk, WebKit2, Gdk, GLib
 
-DASHBOARD_URL = "http://127.0.0.1:8070"
+DASHBOARD_URL = "http://127.0.0.1:8070/v2/"
 CACHE_DIR = os.path.expanduser("~/.cache/hyte-dashboard")
 SIGNAL_FILE = pathlib.Path("/tmp/hyte-desktop-mode")
 FLOAT_BUTTON_SCRIPT = os.path.join(os.path.dirname(__file__), "float_button.py")
@@ -132,7 +132,10 @@ class DashboardWindow(Gtk.Window):
             self._content_mgr
         )
         wk = self.webview.get_settings()
-        wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.NEVER)
+        # ALWAYS on iGPU amdgpu — needed for the ambient page CSS mix-blend-mode
+        # overlays to composite at 60fps. The legacy NEVER setting was required
+        # on the old isolated X :1 where WebKit HW accel was flaky.
+        wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.ALWAYS)
         wk.set_enable_javascript(True)
         wk.set_enable_page_cache(False)
         # Zoom adaptatif : le frontend est calibré pour une viewport CSS de 1100px.
