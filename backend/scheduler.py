@@ -55,6 +55,10 @@ class Scheduler:
             task = asyncio.create_task(self._collector_loop(name, fn, interval))
             self._tasks.append(task)
 
+        # Ambilight: dedicated loop, 0.5s poll + delta-gating inside collector
+        from backend.collectors import ambilight
+        self._tasks.append(asyncio.create_task(ambilight.run(self.broadcast, 0.5)))
+
     def stop(self):
         from backend.collectors import notifications
         for task in self._tasks:
