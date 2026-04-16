@@ -4,9 +4,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
-from backend.config import FRONTEND_DIR, FRONTEND_V2_DIR, WALLPAPERS_DIR
+from backend.config import FRONTEND_V2_DIR, WALLPAPERS_DIR
 from backend.scheduler import Scheduler
 from backend.collectors import gpu
 
@@ -43,11 +42,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-
-@app.get("/")
-async def index():
-    return FileResponse(FRONTEND_DIR / "index.html")
 
 
 @app.get("/api/health")
@@ -386,9 +380,6 @@ async def api_games_launch(payload: dict = Body(...)):
     return launch_game(game_id)
 
 
-# Serve static files (CSS, JS)
-app.mount("/css", StaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
-app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
 app.mount("/wallpapers", StaticFiles(directory=str(WALLPAPERS_DIR)), name="wallpapers")
 
 # Game icons (read-only mount on the system icons dir, scoped to game-launchers/)
@@ -397,6 +388,7 @@ _GAME_ICONS_DIR = _Path.home() / ".local" / "share" / "icons" / "game-launchers"
 if _GAME_ICONS_DIR.exists():
     app.mount("/api/games/icons", StaticFiles(directory=str(_GAME_ICONS_DIR)), name="game_icons")
 
-# v2 frontend (SolidJS + Vite) — served alongside /, webview will flip in a later phase.
+# v2 frontend (SolidJS + Vite) — served at root. Must be the LAST mount so it
+# acts as a catch-all for anything not matched by /api/* or /ws or /wallpapers.
 if FRONTEND_V2_DIR.exists():
-    app.mount("/v2", StaticFiles(directory=str(FRONTEND_V2_DIR), html=True), name="v2")
+    app.mount("/", StaticFiles(directory=str(FRONTEND_V2_DIR), html=True), name="frontend")

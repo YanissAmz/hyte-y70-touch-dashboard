@@ -12,7 +12,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.1')
 from gi.repository import Gtk, WebKit2, Gdk, GLib
 
-DASHBOARD_URL = "http://127.0.0.1:8070/v2/"
+DASHBOARD_URL = "http://127.0.0.1:8070/"
 CACHE_DIR = os.path.expanduser("~/.cache/hyte-dashboard")
 SIGNAL_FILE = pathlib.Path("/tmp/hyte-desktop-mode")
 FLOAT_BUTTON_SCRIPT = os.path.join(os.path.dirname(__file__), "float_button.py")
