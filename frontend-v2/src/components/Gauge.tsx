@@ -10,25 +10,35 @@ type Props = {
 
 /**
  * Canvas arc gauge. Reads --accent from CSS to match the active theme.
- * The canvas is small (120-220px) so perf is fine on iGPU.
+ * Canvas is sized once on mount; redraws only clear+paint (no buffer reset).
  */
 export const Gauge: Component<Props> = (props) => {
   let canvas: HTMLCanvasElement | undefined;
   const size = () => props.size ?? 180;
   const thickness = () => props.thickness ?? 14;
 
-  const draw = (): void => {
-    if (!canvas) return;
+  let sized = false;
+  const ensureSized = (): CanvasRenderingContext2D | null => {
+    if (!canvas) return null;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    const s = size();
-    canvas.width = s * dpr;
-    canvas.height = s * dpr;
-    canvas.style.width = `${s}px`;
-    canvas.style.height = `${s}px`;
-    ctx.scale(dpr, dpr);
+    if (!ctx) return null;
+    if (!sized) {
+      const dpr = window.devicePixelRatio || 1;
+      const s = size();
+      canvas.width = s * dpr;
+      canvas.height = s * dpr;
+      canvas.style.width = `${s}px`;
+      canvas.style.height = `${s}px`;
+      ctx.scale(dpr, dpr);
+      sized = true;
+    }
+    return ctx;
+  };
 
+  const draw = (): void => {
+    const ctx = ensureSized();
+    if (!ctx) return;
+    const s = size();
     const cx = s / 2, cy = s / 2;
     const radius = (s - thickness()) / 2;
     const start = -Math.PI * 1.25;
@@ -44,7 +54,6 @@ export const Gauge: Component<Props> = (props) => {
 
     ctx.clearRect(0, 0, s, s);
 
-    // Track
     ctx.lineCap = "round";
     ctx.lineWidth = thickness();
     ctx.strokeStyle = dim;
@@ -52,19 +61,16 @@ export const Gauge: Component<Props> = (props) => {
     ctx.arc(cx, cy, radius, start, end);
     ctx.stroke();
 
-    // Value
     ctx.strokeStyle = accent;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, start, sweepEnd);
     ctx.stroke();
 
-    // Label/value text
     ctx.fillStyle = text;
-    ctx.font = `700 ${s * 0.22}px Space Grotesk, Inter, sans-serif`;
+    ctx.font = `700 ${s * 0.22}px "Space Grotesk", Inter, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const valueText = `${Math.round(props.value)}${props.unit ?? ""}`;
-    ctx.fillText(valueText, cx, cy);
+    ctx.fillText(`${Math.round(props.value)}${props.unit ?? ""}`, cx, cy);
 
     if (props.label) {
       ctx.fillStyle = muted;

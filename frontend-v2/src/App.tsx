@@ -2,7 +2,7 @@ import { createSignal, Match, Switch, onMount, type Component } from "solid-js";
 import { startWs } from "~/stores/ws";
 import { startAmbilight } from "~/stores/ambilight";
 import { startIdle } from "~/stores/idle";
-import { goToLast } from "~/stores/nav";
+import { goToLast, setPageIndex } from "~/stores/nav";
 import { Debug } from "~/pages/Debug";
 import { Design } from "~/pages/Design";
 import { Main } from "~/pages/Main";
@@ -55,11 +55,7 @@ export const App: Component = () => {
       // Support #page=N for programmatic navigation (testing / deep-linking)
       const applyPageHash = (): void => {
         const m = window.location.hash.match(/page=(\d+)/);
-        if (m) {
-          import("~/stores/nav").then(({ setPageIndex }) => {
-            setPageIndex(parseInt(m[1]!, 10));
-          });
-        }
+        if (m) setPageIndex(parseInt(m[1]!, 10));
       };
       applyPageHash();
       window.addEventListener("hashchange", applyPageHash);
