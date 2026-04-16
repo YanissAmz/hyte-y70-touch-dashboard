@@ -12,6 +12,7 @@ class Scheduler:
     def __init__(self):
         self.clients: set = set()
         self._tasks: list[asyncio.Task] = []
+        self._notifications_started = False
 
     async def broadcast(self, msg_type: str, data: dict):
         message = json.dumps({"type": msg_type, "ts": time.time(), "data": data})
@@ -36,9 +37,6 @@ class Scheduler:
     def start(self):
         from backend.collectors import cpu, memory, gpu, disk, network, weather, processes, system_info, ollama, notifications
 
-        # Démarrer le monitor de notifications (push uniquement, pas de polling)
-        asyncio.create_task(notifications.start_monitor(self.broadcast))
-
         collectors = {
             "cpu": cpu.collect,
             "memory": memory.collect,
@@ -58,9 +56,24 @@ class Scheduler:
             self._tasks.append(task)
 
     def stop(self):
+        from backend.collectors import notifications
         for task in self._tasks:
             task.cancel()
         self._tasks.clear()
+        self._notifications_started = False
+        asyncio.create_task(notifications.stop_monitor())
+
+    async def client_connected(self):
+        from backend.collectors import notifications
+        if not self._notifications_started:
+            await notifications.start_monitor(self.broadcast)
+            self._notifications_started = True
+
+    async def client_disconnected(self):
+        from backend.collectors import notifications
+        if not self.clients and self._notifications_started:
+            await notifications.stop_monitor()
+            self._notifications_started = False
 
     async def get_snapshot(self) -> list[str]:
         from backend.collectors import cpu, memory, gpu, disk, network, weather, processes, system_info, ollama, notifications

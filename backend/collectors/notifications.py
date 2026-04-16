@@ -94,5 +94,16 @@ async def start_monitor(broadcast_fn):
         _monitor_task = asyncio.create_task(_monitor_loop(broadcast_fn))
 
 
+async def stop_monitor():
+    global _monitor_task
+    if _monitor_task is not None:
+        _monitor_task.cancel()
+        try:
+            await _monitor_task
+        except BaseException:
+            pass
+        _monitor_task = None
+
+
 async def collect() -> dict:
     return {"list": list(_notifications)}

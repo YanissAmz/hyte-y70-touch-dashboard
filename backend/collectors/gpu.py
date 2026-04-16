@@ -5,6 +5,8 @@ _handle = None
 
 def init():
     global _handle
+    if _handle is not None:
+        return
     pynvml.nvmlInit()
     _handle = pynvml.nvmlDeviceGetHandleByIndex(0)
 
@@ -17,8 +19,12 @@ def shutdown():
 
 
 async def collect() -> dict:
+    global _handle
     if _handle is None:
-        return {}
+        try:
+            init()
+        except Exception:
+            return {}
 
     util = pynvml.nvmlDeviceGetUtilizationRates(_handle)
     temp = pynvml.nvmlDeviceGetTemperature(_handle, pynvml.NVML_TEMPERATURE_GPU)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # HYTE Y70 Touch Web Dashboard - Startup Script
 export DISPLAY=:0
-DASHBOARD_DIR="/home/yaniss/dashboard"
+DASHBOARD_DIR="/home/yaniss/projects/dashboard"
 
 # Wait for X display
 while ! DISPLAY=:0 xdpyinfo &>/dev/null 2>&1; do

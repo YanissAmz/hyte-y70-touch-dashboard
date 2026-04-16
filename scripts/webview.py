@@ -5,7 +5,7 @@ import pathlib
 import subprocess
 import sys
 
-os.environ.setdefault("DISPLAY", ":0")
+os.environ.setdefault("DISPLAY", ":1")
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -23,6 +23,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 sys.path.insert(0, os.path.dirname(__file__))
 from monitor_utils import find_hyte_monitor_index as find_hyte_monitor
+from monitor_utils import get_hyte_geometry
 
 
 def find_dp0_xrandr_index():
@@ -79,9 +80,19 @@ class DashboardWindow(Gtk.Window):
         super().__init__()
         self.set_title("HYTEDash")
         self.set_decorated(False)
+        self.set_keep_above(True)
         self._minimized = False
         self._float_proc = None
         self._inactivity_timer = None
+
+        # On the isolated HYTE X server there is no WM, so give GTK an explicit
+        # fullscreen-sized base geometry instead of relying on fullscreen hints.
+        hx, hy, hw, hh, _ = get_hyte_geometry()
+        self._hyte_x = hx
+        self._hyte_y = hy
+        self._hyte_w = hw
+        self._hyte_h = hh
+        self.set_default_size(hw, hh)
 
         # WebKit context
         ctx = WebKit2.WebContext.get_default()
@@ -105,7 +116,7 @@ class DashboardWindow(Gtk.Window):
             self._content_mgr
         )
         wk = self.webview.get_settings()
-        wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.ALWAYS)
+        wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.NEVER)
         wk.set_enable_javascript(True)
         wk.set_enable_page_cache(False)
         # Zoom adaptatif : le frontend est calibré pour une viewport CSS de 1100px.
@@ -116,6 +127,15 @@ class DashboardWindow(Gtk.Window):
         self.webview.load_uri(DASHBOARD_URL)
 
         self.add(self.webview)
+        try:
+            import gi
+            gi.require_version('Gdk', '3.0')
+            from gi.repository import Gdk
+            rgba = Gdk.RGBA()
+            rgba.parse('#ff00ff')
+            self.override_background_color(Gtk.StateFlags.NORMAL, rgba)
+        except Exception:
+            pass
         self.connect("destroy", Gtk.main_quit)
 
         # Recalcul du zoom quand la config multi-moniteur change (hotplug TV)
@@ -159,6 +179,10 @@ class DashboardWindow(Gtk.Window):
     def go_fullscreen(self):
         screen = self.get_screen()
         target = find_hyte_monitor()
+        # Under X :1 the HYTE runs without a window manager, so fullscreen hints
+        # alone do not resize the window. Force the exact monitor geometry first.
+        self.move(self._hyte_x, self._hyte_y)
+        self.resize(self._hyte_w, self._hyte_h)
         self.fullscreen_on_monitor(screen, target)
         self.present()
         # Pin to xrandr monitor via EWMH (bypass GTK HiDPI coordinate bug in multi-monitor)
@@ -176,7 +200,7 @@ class DashboardWindow(Gtk.Window):
             try:
                 self._float_proc = subprocess.Popen(
                     [sys.executable, FLOAT_BUTTON_SCRIPT],
-                    env={**os.environ, "DISPLAY": ":0"}
+                    env=dict(os.environ)
                 )
             except Exception as e:
                 print(f"float_button.py error: {e}")
@@ -196,7 +220,7 @@ class DashboardWindow(Gtk.Window):
             try:
                 self._float_proc = subprocess.Popen(
                     [sys.executable, FLOAT_BUTTON_SCRIPT],
-                    env={**os.environ, "DISPLAY": ":0"}
+                    env=dict(os.environ)
                 )
             except Exception as e:
                 print(f"float_button.py error: {e}")

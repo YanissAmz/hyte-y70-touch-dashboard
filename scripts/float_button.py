@@ -4,7 +4,7 @@ import os
 import pathlib
 import sys
 
-os.environ.setdefault("DISPLAY", ":0")
+os.environ.setdefault("DISPLAY", ":1")
 
 import gi
 gi.require_version('Gtk', '3.0')

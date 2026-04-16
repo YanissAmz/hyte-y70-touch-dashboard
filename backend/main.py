@@ -29,7 +29,6 @@ async def _ensure_wallpaper():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    gpu.init()
     await _ensure_wallpaper()
     scheduler.start()
     # Restaurer le dernier état LED sauvegardé
@@ -60,6 +59,7 @@ async def health():
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     scheduler.clients.add(ws)
+    await scheduler.client_connected()
     try:
         snapshot = await scheduler.get_snapshot()
         for msg in snapshot:
@@ -70,6 +70,7 @@ async def websocket_endpoint(ws: WebSocket):
         pass
     finally:
         scheduler.clients.discard(ws)
+        await scheduler.client_disconnected()
 
 
 # Controllers - REST endpoints

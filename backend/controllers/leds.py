@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import pathlib
+import subprocess
 import threading
 import time
 
@@ -23,6 +24,9 @@ _led_lock = threading.Lock()
 _I2C_SETTLE_S = 0.020
 # Persistance : dernier état LED restauré au démarrage
 _STATE_FILE = pathlib.Path(os.path.expanduser("~/.cache/hyte-dashboard/leds.json"))
+_AMBI_CHECK_TTL_S = 1.0
+_ambilight_cache_active = False
+_ambilight_cache_ts = 0.0
 
 
 def _save_state():
@@ -43,6 +47,47 @@ def _load_state() -> dict | None:
     except Exception as e:
         logging.debug(f"LED state load: {e}")
     return None
+
+
+def _ambilight_sync_active() -> bool:
+    """Retourne True si la synchro ambilight externe doit garder la main.
+
+    Check léger avec cache 1s :
+    - service `ambilight-sync.service`
+    - fallback process `ambilight_unified_sync.py`
+    """
+    global _ambilight_cache_active, _ambilight_cache_ts
+    now = time.monotonic()
+    if now - _ambilight_cache_ts < _AMBI_CHECK_TTL_S:
+        return _ambilight_cache_active
+
+    active = False
+    try:
+        proc = subprocess.run(
+            ["systemctl", "is-active", "--quiet", "ambilight-sync.service"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        active = proc.returncode == 0
+    except Exception:
+        active = False
+
+    if not active:
+        try:
+            proc = subprocess.run(
+                ["pgrep", "-f", "ambilight_unified_sync.py"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+            active = proc.returncode == 0
+        except Exception:
+            active = False
+
+    _ambilight_cache_active = active
+    _ambilight_cache_ts = now
+    return active
 
 
 def _is_i2c_device(device) -> bool:
@@ -135,6 +180,8 @@ async def _stop_effect():
 # ── Animations ────────────────────────────────────────────────────────────────
 
 def _rainbow_frame_sync(offset: float):
+    if _ambilight_sync_active():
+        return
     with _led_lock:
         client = _get_client()
         if client is None:
@@ -152,6 +199,8 @@ async def _rainbow_loop():
     offset = 0.0
     try:
         while True:
+            if _ambilight_sync_active():
+                return
             await asyncio.to_thread(_rainbow_frame_sync, offset)
             offset = (offset + 0.012) % 1.0
             await asyncio.sleep(0.1)
@@ -160,6 +209,8 @@ async def _rainbow_loop():
 
 
 def _breathing_frame_sync(r: int, g: int, b: int, brightness: float):
+    if _ambilight_sync_active():
+        return
     with _led_lock:
         from openrgb.utils import RGBColor
         client = _get_client()
@@ -178,6 +229,8 @@ async def _breathing_loop(r: int, g: int, b: int):
     t = 0.0
     try:
         while True:
+            if _ambilight_sync_active():
+                return
             # Sinus 0→1→0 sur 3 secondes
             brightness = (math.sin(t * math.pi) ** 2)
             await asyncio.to_thread(_breathing_frame_sync, r, g, b, brightness)
@@ -270,6 +323,9 @@ def _apply_effect_locked(effect: str, r: int, g: int, b: int):
 
 async def set_effect(effect: str, r: int = 255, g: int = 255, b: int = 255):
     global _effect_task, _current_effect, _current_color
+    if _ambilight_sync_active():
+        await _stop_effect()
+        return {"status": "blocked", "reason": "ambilight_active"}
     await _stop_effect()
     _current_effect = effect
     _current_color = (r, g, b)
@@ -282,16 +338,21 @@ async def set_effect(effect: str, r: int = 255, g: int = 255, b: int = 255):
     elif sw_anim == "breathing":
         _effect_task = asyncio.create_task(_breathing_loop(r, g, b))
     _save_state()
+    return {"status": "ok"}
 
 
 async def set_color(r: int, g: int, b: int):
     """Couleur statique sur tous les devices — arrête tout effet en cours."""
     global _current_effect, _current_color
+    if _ambilight_sync_active():
+        await _stop_effect()
+        return {"status": "blocked", "reason": "ambilight_active"}
     await _stop_effect()
     _current_effect = "static"
     _current_color = (r, g, b)
     await asyncio.to_thread(_set_color_all_sync, r, g, b)
     _save_state()
+    return {"status": "ok"}
 
 
 def _set_color_all_sync(r: int, g: int, b: int):
@@ -313,11 +374,14 @@ def _set_color_all_sync(r: int, g: int, b: int):
 
 
 async def turn_off():
-    await set_effect("off")
+    return await set_effect("off")
 
 
 async def restore_state():
     """Restaure le dernier état LED sauvegardé (appelé au démarrage backend)."""
+    if _ambilight_sync_active():
+        await _stop_effect()
+        return
     st = _load_state()
     if not st:
         return
@@ -335,9 +399,24 @@ async def restore_state():
 def get_status() -> dict:
     client = _get_client()
     if client is None:
-        return {"available": False, "devices": [], "effect": _current_effect}
+        return {
+            "available": False,
+            "devices": [],
+            "effect": _current_effect,
+            "ambilight_active": _ambilight_sync_active(),
+        }
     try:
         devices = [{"name": d.name, "leds": len(d.leds)} for d in client.devices]
-        return {"available": True, "devices": devices, "effect": _current_effect}
+        return {
+            "available": True,
+            "devices": devices,
+            "effect": _current_effect,
+            "ambilight_active": _ambilight_sync_active(),
+        }
     except Exception:
-        return {"available": False, "devices": [], "effect": _current_effect}
+        return {
+            "available": False,
+            "devices": [],
+            "effect": _current_effect,
+            "ambilight_active": _ambilight_sync_active(),
+        }
