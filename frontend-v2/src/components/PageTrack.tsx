@@ -46,76 +46,96 @@ export const PageTrack: Component<Props> = (props) => {
     setDragDelta(0);
   };
 
-  const onTouchStart = (e: TouchEvent): void => {
-    if (e.touches.length !== 1) return;
-    const t = e.touches[0]!;
-    startX = t.clientX;
-    startY = t.clientY;
+  const beginDrag = (x: number, y: number): void => {
+    startX = x; startY = y;
     startTs = performance.now();
     axis = null;
     setDragging(true);
   };
 
-  const onTouchMove = (e: TouchEvent): void => {
-    if (!dragging() || e.touches.length !== 1) return;
-    const t = e.touches[0]!;
-    const dx = t.clientX - startX;
-    const dy = t.clientY - startY;
-
+  const updateDrag = (x: number, y: number, preventDefault: () => void): void => {
+    if (!dragging()) return;
+    const dx = x - startX;
+    const dy = y - startY;
     if (axis === null) {
       if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
         axis = Math.abs(dx) > Math.abs(dy) * AXIS_LOCK_RATIO ? "h" : "v";
-      } else {
-        return;
-      }
+      } else return;
     }
-
     if (axis === "h") {
-      e.preventDefault();  // block vertical page scroll while swiping
+      preventDefault();
       setDragDelta(dx);
     }
-    // vertical: do nothing, page scrolls naturally
   };
 
-  const onTouchEnd = (): void => {
+  const endDrag = (): void => {
     if (!dragging()) return;
     const dx = dragDelta();
     const dt = performance.now() - startTs;
     const velocity = Math.abs(dx) / Math.max(dt, 1);
-
     if (axis === "h") {
       const passThreshold = Math.abs(dx) > SWIPE_THRESHOLD_PX;
       const flicked = velocity > FLICK_VELOCITY && Math.abs(dx) > 20;
       if ((passThreshold || flicked) && dx < 0) goTo(pageIndex() + 1);
       else if ((passThreshold || flicked) && dx > 0) goTo(pageIndex() - 1);
-      else setDragDelta(0);  // snap back
+      else setDragDelta(0);
     } else {
       setDragDelta(0);
     }
-
     setDragging(false);
     axis = null;
   };
 
+  const onTouchStart = (e: TouchEvent): void => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0]!;
+    beginDrag(t.clientX, t.clientY);
+  };
+  const onTouchMove = (e: TouchEvent): void => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0]!;
+    updateDrag(t.clientX, t.clientY, () => e.preventDefault());
+  };
+  const onTouchEnd = (): void => endDrag();
+
+  const onPointerDown = (e: PointerEvent): void => {
+    // Ignore touch pointers — handled by touch listeners. Mouse + pen only.
+    if (e.pointerType === "touch") return;
+    beginDrag(e.clientX, e.clientY);
+  };
+  const onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerType === "touch") return;
+    updateDrag(e.clientX, e.clientY, () => e.preventDefault());
+  };
+  const onPointerUp = (e: PointerEvent): void => {
+    if (e.pointerType === "touch") return;
+    endDrag();
+  };
+
   onMount(() => {
     update();
-    // React to window resize (rare here but correct)
     const ro = new ResizeObserver(update);
     if (trackEl) ro.observe(trackEl);
     onCleanup(() => ro.disconnect());
 
-    // Touch listeners on the wrapper. passive:false on touchmove so we can
-    // preventDefault when the gesture is horizontal.
     if (!wrapEl) return;
     wrapEl.addEventListener("touchstart", onTouchStart, { passive: true });
     wrapEl.addEventListener("touchmove",  onTouchMove,  { passive: false });
     wrapEl.addEventListener("touchend",   onTouchEnd,   { passive: true });
     wrapEl.addEventListener("touchcancel", onTouchEnd,  { passive: true });
+    wrapEl.addEventListener("pointerdown", onPointerDown);
+    wrapEl.addEventListener("pointermove", onPointerMove);
+    wrapEl.addEventListener("pointerup",   onPointerUp);
+    wrapEl.addEventListener("pointercancel", onPointerUp);
     onCleanup(() => {
       wrapEl?.removeEventListener("touchstart", onTouchStart);
       wrapEl?.removeEventListener("touchmove",  onTouchMove);
       wrapEl?.removeEventListener("touchend",   onTouchEnd);
       wrapEl?.removeEventListener("touchcancel", onTouchEnd);
+      wrapEl?.removeEventListener("pointerdown", onPointerDown);
+      wrapEl?.removeEventListener("pointermove", onPointerMove);
+      wrapEl?.removeEventListener("pointerup",   onPointerUp);
+      wrapEl?.removeEventListener("pointercancel", onPointerUp);
     });
   });
 
