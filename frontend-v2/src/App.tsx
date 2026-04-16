@@ -10,6 +10,7 @@ import { Processes } from "~/pages/Processes";
 import { Sysinfo } from "~/pages/Sysinfo";
 import { Launcher } from "~/pages/Launcher";
 import { Browser } from "~/pages/Browser";
+import { GameCenter } from "~/pages/GameCenter";
 import { PageTrack, Page } from "~/components/PageTrack";
 
 type Route = "dashboard" | "debug" | "design";
@@ -24,6 +25,7 @@ function readHash(): Route {
 const Dashboard: Component = () => (
   <PageTrack>
     <Page id="main"><Main /></Page>
+    <Page id="games"><GameCenter /></Page>
     <Page id="network"><Network /></Page>
     <Page id="processes"><Processes /></Page>
     <Page id="sysinfo"><Sysinfo /></Page>
