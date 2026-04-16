@@ -60,7 +60,7 @@ export const GameCenter: Component = () => {
                 onClick={() => void launch(g)}
                 class="relative overflow-hidden"
                 style={{
-                  "aspect-ratio": "3 / 4",
+                  "aspect-ratio": "1 / 1",
                   "border-radius": "var(--radius-lg)",
                   border: "1px solid var(--border)",
                   background: "var(--bg-elev-1)",
@@ -78,8 +78,9 @@ export const GameCenter: Component = () => {
                   style={{
                     width: "100%",
                     height: "100%",
-                    "object-fit": "cover",
+                    "object-fit": "contain",
                     display: "block",
+                    background: "var(--bg-elev-2)",
                   }}
                 />
                 {/* name overlay */}
@@ -89,12 +90,12 @@ export const GameCenter: Component = () => {
                     left: "0",
                     right: "0",
                     bottom: "0",
-                    padding: "12px",
-                    background: "linear-gradient(to top, rgba(0,0,0,0.85), transparent)",
+                    padding: "16px 18px",
+                    background: "linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.55) 60%, transparent)",
                     color: "#fff",
                     "font-weight": "700",
                     "font-family": "var(--font-display)",
-                    "font-size": "16px",
+                    "font-size": "20px",
                     "line-height": "1.2",
                   }}
                 >

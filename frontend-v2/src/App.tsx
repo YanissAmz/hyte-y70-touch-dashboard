@@ -51,9 +51,19 @@ export const App: Component = () => {
     startAmbilight();
     window.addEventListener("hashchange", () => setRoute(readHash()));
 
-    // Only install idle redirect on the dashboard route — not on debug/design
     if (route() === "dashboard") {
-      // Wait a tick so the PageTrack exists in the DOM
+      // Support #page=N for programmatic navigation (testing / deep-linking)
+      const applyPageHash = (): void => {
+        const m = window.location.hash.match(/page=(\d+)/);
+        if (m) {
+          import("~/stores/nav").then(({ setPageIndex }) => {
+            setPageIndex(parseInt(m[1]!, 10));
+          });
+        }
+      };
+      applyPageHash();
+      window.addEventListener("hashchange", applyPageHash);
+
       window.setTimeout(() => startIdle(goToAmbient, 120_000), 50);
     }
   });
