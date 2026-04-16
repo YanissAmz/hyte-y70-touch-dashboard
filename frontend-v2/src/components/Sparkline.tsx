@@ -13,17 +13,22 @@ export const Sparkline: Component<Props> = (props) => {
   const width  = () => props.width  ?? 300;
   const height = () => props.height ?? 60;
 
+  let sized = false;
+
   const draw = (): void => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
     const w = width(), h = height();
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
-    ctx.scale(dpr, dpr);
+    if (!sized) {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.scale(dpr, dpr);
+      sized = true;
+    }
     ctx.clearRect(0, 0, w, h);
 
     const values = props.values;
