@@ -1,0 +1,102 @@
+/**
+ * Design tokens — 3 themes switchable via [data-theme] on <html>.
+ *
+ * Theme A: Minimalist Dark (default)
+ * Theme B: Anime (Bakugo-inspired, warm orange accents)
+ * Theme C: Cyberpunk (neon magenta/cyan, scanlines)
+ *
+ * Tokens are consumed through Tailwind arbitrary values and direct CSS.
+ */
+
+:root,
+[data-theme="a"] {
+  /* Palette — minimalist dark, neutral blue accent */
+  --bg:         #08080A;
+  --bg-elev-1:  #12131A;
+  --bg-elev-2:  #1A1C26;
+  --border:     rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --text:        #E6EDF3;
+  --text-muted:  #8B949E;
+  --text-dim:    #5B6370;
+
+  --accent:       #7DAAFF;
+  --accent-strong: #A5C4FF;
+  --accent-glow:  rgba(125, 170, 255, 0.18);
+  --accent-2:     #3FB950;
+
+  --success: #3FB950;
+  --warn:    #F0883E;
+  --danger:  #F85149;
+
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radii, spacing scale, transitions */
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur:      180ms;
+  --dur-slow: 280ms;
+
+  /* Touch sizing */
+  --tap-min:     48px;
+  --tap-primary: 72px;
+}
+
+[data-theme="b"] {
+  /* Anime — warm, bolder gradients, Bakugo explosion palette */
+  --bg:         #0A0605;
+  --bg-elev-1:  #1A0F0A;
+  --bg-elev-2:  #241511;
+  --border:     rgba(255, 180, 120, 0.10);
+  --border-strong: rgba(255, 180, 120, 0.22);
+
+  --text:       #FFF1E6;
+  --text-muted: #C7A99A;
+  --text-dim:   #7A6358;
+
+  --accent:        #FF6B1A;
+  --accent-strong: #FF8C47;
+  --accent-glow:   rgba(255, 107, 26, 0.28);
+  --accent-2:      #FFD166;
+
+  --success: #8BC34A;
+  --warn:    #FFC04D;
+  --danger:  #E63946;
+
+  --shadow-soft: 0 4px 28px rgba(255, 107, 26, 0.12);
+}
+
+[data-theme="c"] {
+  /* Cyberpunk — neon magenta/cyan, deep black */
+  --bg:         #03030A;
+  --bg-elev-1:  #0A0A1A;
+  --bg-elev-2:  #121228;
+  --border:     rgba(200, 80, 255, 0.14);
+  --border-strong: rgba(0, 255, 255, 0.28);
+
+  --text:       #E6F6FF;
+  --text-muted: #8FA7C4;
+  --text-dim:   #4C5A78;
+
+  --accent:        #FF00FF;
+  --accent-strong: #FF55FF;
+  --accent-glow:   rgba(255, 0, 255, 0.30);
+  --accent-2:      #00FFFF;
+
+  --success: #00FFB2;
+  --warn:    #FFD600;
+  --danger:  #FF2D6B;
+
+  --shadow-soft: 0 4px 32px rgba(255, 0, 255, 0.18),
+                 0 0 1px rgba(0, 255, 255, 0.35);
+}
