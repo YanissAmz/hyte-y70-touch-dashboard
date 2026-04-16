@@ -1,10 +1,22 @@
 #!/bin/bash
-# Watchdog : restaure la rotation DP-0 sur :1 + réagit au hotplug HDMI sur :0
-# Architecture : GNOME sur :0 (HDMI-0 uniquement), HYTE sur :1 (DP-0 isolé)
-export DISPLAY=:1
+# Watchdog : maintient le backend FastAPI + le webview GTK actifs sur le HYTE.
+# Architecture unifiée DISPLAY=:0 (iGPU) — plus de X server isolé :1.
+#
+# Détection du connecteur HYTE par résolution (1100x3840 portrait) pour supporter
+# amdgpu (iGPU: DisplayPort-0) et nvidia legacy (DP-0) sans hardcoding.
+
+export DISPLAY=:0
 DASHBOARD_DIR="/home/yaniss/projects/dashboard"
 SUSPEND_FLAG="/tmp/hyte-dashboard-suspended"
 GAME_LITE_FLAG="/tmp/hyte-dashboard-game-lite"
+
+_detect_hyte_connector() {
+    # Parse xrandr pour trouver la sortie connectée avec résolution 1100x3840 ou 3840x1100.
+    xrandr --query 2>/dev/null | awk '
+        / connected/ && !/disconnected/ { current=$1 }
+        current && /^[[:space:]]+(1100x3840|3840x1100)[[:space:]]/ { print current; exit }
+    '
+}
 
 _ensure_backend() {
     [ -f "$SUSPEND_FLAG" ] && return
@@ -26,35 +38,26 @@ _ensure_webview() {
 }
 
 _map_touch() {
+    local conn
+    conn=$(_detect_hyte_connector)
+    [ -z "$conn" ] && return
     for id in $(xinput list --id-only 2>/dev/null); do
         name=$(xinput list --name-only "$id" 2>/dev/null)
         case "$name" in
             *ILITEK*ILITEK-TOUCH*)
                 xinput set-prop "$id" "libinput Calibration Matrix" 1 0 0 0 1 0 0 0 1 2>/dev/null
-                xinput --map-to-output "$id" DP-0 2>/dev/null
+                xinput --map-to-output "$id" "$conn" 2>/dev/null
                 ;;
         esac
     done
 }
 
-_apply_dp0_rotation() {
-    # Apply/restore portrait rotation on :1 (HYTE X server)
-    xrandr --output DP-0 --auto --rotate right 2>/dev/null
-    sleep 1
-    _map_touch
-}
-
-_hdmi_state() {
-    DISPLAY=:0 xrandr --query 2>/dev/null | grep -q "^HDMI-0 connected" && echo "on" || echo "off"
-}
-
-last_hdmi=$(_hdmi_state)
-if [ ! -f "$SUSPEND_FLAG" ]; then
-    _apply_dp0_rotation
-fi
+# Boot : touch mapping + services
+_map_touch
 _ensure_backend
 _ensure_webview
 
+# Loop : 30s (moins agressif que 10s — plus d'interférence gaming non plus depuis la séparation iGPU)
 while true; do
     if [ -f "$SUSPEND_FLAG" ]; then
         pkill -f "webview.py" 2>/dev/null || true
@@ -73,30 +76,8 @@ while true; do
     _ensure_backend
     _ensure_webview
 
-    # 1) Rotation DP-0 perdue → restore + relancer webview
-    current_line=$(xrandr --query 2>/dev/null | grep "^DP-0 connected")
-    if ! printf '%s\n' "$current_line" | grep -q "1100x3840" || ! printf '%s\n' "$current_line" | grep -q " right "; then
-        logger -t hyte-dashboard "DP-0 rotation lost on :1, restoring..."
-        _apply_dp0_rotation
-        sleep 1
-        pkill -f "webview.py" 2>/dev/null
-        sleep 1
-        /usr/bin/python3 "$DASHBOARD_DIR/scripts/webview.py" &
-        logger -t hyte-dashboard "Dashboard restored"
-        last_hdmi=$(_hdmi_state)
-    fi
+    # Re-map touch périodiquement — GNOME peut le reset après hotplug/settings
+    _map_touch
 
-    # 2) Hotplug HDMI (branchement/débranchement TV) → pas d'impact sur DP-0/:1
-    cur_hdmi=$(_hdmi_state)
-    if [ "$cur_hdmi" != "$last_hdmi" ]; then
-        logger -t hyte-dashboard "HDMI hotplug: $last_hdmi -> $cur_hdmi"
-        # DP-0 sur :1 n'est pas affecté par le hotplug HDMI sur :0
-        # Relancer webview uniquement si needed (géométrie :1 inchangée)
-        pkill -f "webview.py" 2>/dev/null
-        sleep 1
-        /usr/bin/python3 "$DASHBOARD_DIR/scripts/webview.py" &
-        last_hdmi=$cur_hdmi
-    fi
-
-    sleep 10
+    sleep 30
 done
