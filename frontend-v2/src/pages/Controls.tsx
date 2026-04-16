@@ -61,7 +61,7 @@ function ColorWheel(props: { onPick: (r: number, g: number, b: number) => void }
       height={300}
       onClick={pickAt}
       onTouchStart={pickAt}
-      style={{ "touch-action": "none", "border-radius": "50%" }}
+      style={{ "touch-action": "none", "border-radius": "50%", width: "500px", height: "500px" }}
     />
   );
 }
@@ -130,8 +130,8 @@ export const Controls: Component = () => {
   };
 
   return (
-    <div class="p-5 pb-24">
-      <h1 class="ui-title text-2xl mb-4">Controls</h1>
+    <div class="p-8 pb-32">
+      <h1 class="ui-title text-4xl mb-8">Controls</h1>
 
       {/* LED effects */}
       <Card>

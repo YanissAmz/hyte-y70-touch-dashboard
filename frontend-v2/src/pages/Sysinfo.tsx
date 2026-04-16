@@ -22,8 +22,8 @@ export const Sysinfo: Component = () => {
   const ollama = wsSignals.ollama.value;
 
   return (
-    <div class="p-5 pb-24">
-      <h1 class="ui-title text-2xl mb-4">System</h1>
+    <div class="p-8 pb-32">
+      <h1 class="ui-title text-4xl mb-8">System</h1>
 
       <Card>
         <div class="grid grid-cols-2 gap-4">

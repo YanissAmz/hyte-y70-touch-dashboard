@@ -52,10 +52,10 @@ function Tile(props: { icon: string; color: string; name: string; onClick: () =>
     >
       <div
         style={{
-          "font-size": "40px",
-          width: "72px",
-          height: "72px",
-          "border-radius": "var(--radius)",
+          "font-size": "64px",
+          width: "120px",
+          height: "120px",
+          "border-radius": "var(--radius-lg)",
           background: `${props.color}22`,
           display: "flex",
           "align-items": "center",
@@ -64,7 +64,7 @@ function Tile(props: { icon: string; color: string; name: string; onClick: () =>
       >
         {props.icon}
       </div>
-      <div class="text-sm font-semibold">{props.name}</div>
+      <div class="text-lg font-semibold mt-2">{props.name}</div>
     </div>
   );
 }
@@ -77,8 +77,8 @@ export const Launcher: Component = () => {
   };
 
   return (
-    <div class="p-5 pb-24">
-      <h1 class="ui-title text-2xl mb-4">Launcher</h1>
+    <div class="p-8 pb-32">
+      <h1 class="ui-title text-4xl mb-8">Launcher</h1>
 
       <Card>
         <h2 class="ui-title text-lg mb-3">Apps</h2>
