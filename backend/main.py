@@ -6,7 +6,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from backend.config import FRONTEND_DIR, WALLPAPERS_DIR
+from backend.config import FRONTEND_DIR, FRONTEND_V2_DIR, WALLPAPERS_DIR
 from backend.scheduler import Scheduler
 from backend.collectors import gpu
 
@@ -373,3 +373,7 @@ async def bluetooth_connect(data: dict = Body(...)):
 app.mount("/css", StaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
 app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
 app.mount("/wallpapers", StaticFiles(directory=str(WALLPAPERS_DIR)), name="wallpapers")
+
+# v2 frontend (SolidJS + Vite) — served alongside /, webview will flip in a later phase.
+if FRONTEND_V2_DIR.exists():
+    app.mount("/v2", StaticFiles(directory=str(FRONTEND_V2_DIR), html=True), name="v2")
