@@ -5,7 +5,7 @@ import pathlib
 import subprocess
 import sys
 
-os.environ.setdefault("DISPLAY", ":1")
+os.environ.setdefault("DISPLAY", ":0")
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -26,19 +26,30 @@ from monitor_utils import find_hyte_monitor_index as find_hyte_monitor
 from monitor_utils import get_hyte_geometry
 
 
-def find_dp0_xrandr_index():
-    """Parse xrandr --listmonitors to find DP-0's monitor index (used by _NET_WM_FULLSCREEN_MONITORS)."""
+def find_hyte_xrandr_index():
+    """Parse xrandr --listmonitors pour trouver l'index du moniteur HYTE (1100x3840 portrait).
+
+    Détection par résolution (pas par nom de connecteur) pour supporter nvidia et amdgpu.
+    Format xrandr: ' 1: +DisplayPort-0 1100/340x3840/100+3840+0  DisplayPort-0'
+    """
+    import re
     try:
         out = subprocess.check_output(["xrandr", "--listmonitors"]).decode()
         for line in out.splitlines():
             line = line.strip()
-            # Format: " 0: +*DP-0 1100/344x3840/99+3840+0  DP-0"
             parts = line.split(":", 1)
-            if len(parts) == 2 and parts[0].strip().isdigit() and "DP-0" in parts[1]:
+            if len(parts) != 2 or not parts[0].strip().isdigit():
+                continue
+            # Extract resolution from format like "1100/340x3840/100"
+            if re.search(r"\b1100/\d+x3840/\d+", parts[1]):
                 return int(parts[0].strip())
     except Exception:
         pass
     return 0
+
+
+# Legacy alias (kept for safety in case of import refs elsewhere)
+find_dp0_xrandr_index = find_hyte_xrandr_index
 
 
 def pin_fullscreen_to_monitor(xid: int, mon_idx: int):
@@ -85,8 +96,13 @@ class DashboardWindow(Gtk.Window):
         self._float_proc = None
         self._inactivity_timer = None
 
-        # On the isolated HYTE X server there is no WM, so give GTK an explicit
-        # fullscreen-sized base geometry instead of relying on fullscreen hints.
+        # On GNOME's X :0 the WM mangles window coordinates under HiDPI (GNOME
+        # scale=2 on primary HDMI causes move(3840,0) to land at x=7680).
+        # override_redirect bypasses the WM entirely so we can position the
+        # window at exact physical X11 coordinates. Applied in the realize
+        # signal since the GDK window doesn't exist before that.
+        self.connect("realize", self._on_realize)
+
         hx, hy, hw, hh, _ = get_hyte_geometry()
         self._hyte_x = hx
         self._hyte_y = hy
@@ -144,10 +160,33 @@ class DashboardWindow(Gtk.Window):
         # Polling signal file pour les commandes externes (float_button, API)
         GLib.timeout_add(1500, self._check_signal)
 
+    def _on_realize(self, _widget):
+        """Bypass GNOME WM via override_redirect, then pin to HYTE geometry.
+
+        Without this, the WM applies its HiDPI coordinate logic which doubles
+        physical X offsets under primary-monitor scale=2 (the HYTE ends up at
+        x=7680 instead of 3840).
+        """
+        gdk_win = self.get_window()
+        if gdk_win is None:
+            return
+        gdk_win.set_override_redirect(True)
+        gdk_win.move(self._hyte_x, self._hyte_y)
+        gdk_win.resize(self._hyte_w, self._hyte_h)
+
     def _apply_adaptive_zoom(self):
+        """Compensate GNOME monitor scale + text-scaling-factor so CSS viewport
+        stays at physical 1100px regardless of user accessibility settings."""
         screen = Gdk.Screen.get_default()
         scale = screen.get_monitor_scale_factor(find_hyte_monitor()) or 1
-        self.webview.set_zoom_level(1.0 / scale)
+        text_scale = 1.0
+        try:
+            from gi.repository import Gio
+            settings = Gio.Settings.new("org.gnome.desktop.interface")
+            text_scale = settings.get_double("text-scaling-factor") or 1.0
+        except Exception:
+            pass
+        self.webview.set_zoom_level(1.0 / (scale * text_scale))
 
     def _on_js_message(self, manager, result):
         """Reçoit les messages du JS via window.webkit.messageHandlers.dashboard.postMessage()"""
@@ -189,7 +228,7 @@ class DashboardWindow(Gtk.Window):
         gdk_win = self.get_window()
         if gdk_win is not None:
             xid = gdk_win.get_xid()
-            mon_idx = find_dp0_xrandr_index()
+            mon_idx = find_hyte_xrandr_index()
             GLib.timeout_add(300, lambda: (pin_fullscreen_to_monitor(xid, mon_idx), False)[1])
 
     def enter_browser_mode(self, url: str):

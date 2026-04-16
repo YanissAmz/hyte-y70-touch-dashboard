@@ -1,26 +1,43 @@
-"""Utilitaires GTK/GDK partagés pour localiser le moniteur HYTE (DP-0).
+"""Utilitaires GTK/GDK partagés pour localiser le moniteur HYTE.
 
 Utilisé par webview.py et float_button.py pour garantir qu'ils ciblent le même
-écran physique indépendamment de la config multi-moniteur en cours.
+écran physique indépendamment du GPU (nvidia/amdgpu) et de la config multi-moniteur.
+
+Détection par géométrie (portrait 1100x3840 ou scale=2 équivalent 550x1920).
+Fallback par nom de connecteur pour les setups legacy.
 """
 import gi
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
 
+_HYTE_WIDTHS  = (550, 1100)
+_HYTE_HEIGHTS = (1920, 3840)
+
+
 def find_hyte_monitor_index(screen=None) -> int:
-    """Retourne l'index GTK du moniteur HYTE (DP-0). Fallback : dernier moniteur."""
+    """Retourne l'index GTK du moniteur HYTE.
+
+    Stratégie :
+      1. Match géométrique : panneau portrait 1100x3840 (ou 550x1920 en logical avec scale=2)
+      2. Fallback : connecteur nommé DisplayPort-0 (amdgpu) ou DP-0 (nvidia legacy)
+      3. Dernier moniteur (safety)
+    """
     screen = screen or Gdk.Screen.get_default()
     n = screen.get_n_monitors()
-    for i in range(n):
-        name = screen.get_monitor_plug_name(i) or ""
-        if "DP-0" in name or "DP0" in name:
-            return i
-    # Fallback géométrique : portrait 1100x3840 (ou 550x1920 en logique scale=2)
+
+    # 1. Géométrie (source de vérité — fonctionne sur tout driver/GPU)
     for i in range(n):
         geo = screen.get_monitor_geometry(i)
-        if geo.width in (550, 1100) and geo.height in (1920, 3840):
+        if geo.width in _HYTE_WIDTHS and geo.height in _HYTE_HEIGHTS:
             return i
+
+    # 2. Connecteur par nom (fallback legacy)
+    for i in range(n):
+        name = screen.get_monitor_plug_name(i) or ""
+        if any(tag in name for tag in ("DisplayPort-0", "DP-0", "DP0")):
+            return i
+
     return n - 1
 
 
