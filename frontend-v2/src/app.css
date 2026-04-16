@@ -1,13 +1,13 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
-/* Base reset + touch-first UX for HYTE Y70 Touch panel */
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #08080A;
-  color: #E6EDF3;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
   overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
@@ -16,6 +16,86 @@ html, body, #root {
 
 *, *::before, *::after { box-sizing: border-box; }
 
-/* No scroll bars on touch */
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
+
+/* -- Primitives -------------------------------------------------------- */
+
+.ui-card {
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.ui-card-lg {
+  padding: 24px;
+  border-radius: var(--radius-lg);
+}
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0 20px;
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elev-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease),
+              background var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+.ui-btn:active { transform: scale(0.98); }
+
+.ui-btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0 var(--accent-glow);
+}
+.ui-btn-primary:active {
+  box-shadow: 0 0 0 8px var(--accent-glow);
+}
+
+.ui-btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+
+.ui-btn-lg { min-height: var(--tap-primary); font-size: 18px; padding: 0 28px; }
+
+.ui-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.ui-muted  { color: var(--text-muted); }
+.ui-dim    { color: var(--text-dim); }
+.ui-accent { color: var(--accent); }
+
+/* Cyberpunk-only: subtle scanlines overlay on bg */
+[data-theme="c"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 255, 255, 0.03) 3px,
+    rgba(0, 255, 255, 0.03) 4px
+  );
+  z-index: 50;
+}
