@@ -3,6 +3,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
+FRONTEND_V2_DIR = BASE_DIR / "frontend-v2" / "dist"
 WALLPAPERS_DIR = BASE_DIR / "wallpapers"
 
 HOST = "127.0.0.1"

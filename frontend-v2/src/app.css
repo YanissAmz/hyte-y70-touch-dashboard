@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* Base reset + touch-first UX for HYTE Y70 Touch panel */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #08080A;
+  color: #E6EDF3;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* No scroll bars on touch */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
