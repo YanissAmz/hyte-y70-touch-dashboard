@@ -74,8 +74,8 @@ export const Settings: Component = () => {
   };
 
   return (
-    <div class="p-5 pb-24">
-      <h1 class="ui-title text-2xl mb-4">Settings</h1>
+    <div class="p-8 pb-32">
+      <h1 class="ui-title text-4xl mb-8">Settings</h1>
 
       {/* Theme selector */}
       <Card>

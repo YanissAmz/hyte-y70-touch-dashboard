@@ -2,6 +2,7 @@ import { createSignal, Match, Switch, onMount, type Component } from "solid-js";
 import { startWs } from "~/stores/ws";
 import { startAmbilight } from "~/stores/ambilight";
 import { startIdle } from "~/stores/idle";
+import { goToLast } from "~/stores/nav";
 import { Debug } from "~/pages/Debug";
 import { Design } from "~/pages/Design";
 import { Main } from "~/pages/Main";
@@ -11,7 +12,6 @@ import { Network } from "~/pages/Network";
 import { Processes } from "~/pages/Processes";
 import { Sysinfo } from "~/pages/Sysinfo";
 import { Launcher } from "~/pages/Launcher";
-import { Browser } from "~/pages/Browser";
 import { GameCenter } from "~/pages/GameCenter";
 import { Ambient } from "~/pages/Ambient";
 import { PageTrack, Page } from "~/components/PageTrack";
@@ -35,15 +35,12 @@ const Dashboard: Component = () => (
     <Page id="controls"><Controls /></Page>
     <Page id="settings"><Settings /></Page>
     <Page id="launcher"><Launcher /></Page>
-    <Page id="browser"><Browser /></Page>
     <Page id="ambient"><Ambient /></Page>
   </PageTrack>
 );
 
 function goToAmbient(): void {
-  const track = document.querySelector<HTMLElement>(".page-track");
-  if (!track) return;
-  track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
+  goToLast();
 }
 
 export const App: Component = () => {

@@ -132,10 +132,7 @@ class DashboardWindow(Gtk.Window):
             self._content_mgr
         )
         wk = self.webview.get_settings()
-        # ALWAYS on iGPU amdgpu — needed for the ambient page CSS mix-blend-mode
-        # overlays to composite at 60fps. The legacy NEVER setting was required
-        # on the old isolated X :1 where WebKit HW accel was flaky.
-        wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.ALWAYS)
+        wk.set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.NEVER)
         wk.set_enable_javascript(True)
         wk.set_enable_page_cache(False)
         # Zoom adaptatif : le frontend est calibré pour une viewport CSS de 1100px.

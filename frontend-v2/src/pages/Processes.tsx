@@ -31,24 +31,24 @@ export const Processes: Component = () => {
   void track;
 
   return (
-    <div class="p-5 pb-24">
-      <h1 class="ui-title text-2xl mb-4">Processes</h1>
+    <div class="p-8 pb-32">
+      <h1 class="ui-title text-4xl mb-8">Processes</h1>
 
       <Card>
-        <h2 class="ui-title text-lg mb-3">
-          Top CPU <span class="ui-muted text-sm font-normal">({fmt(cpu()?.usage_percent)}%)</span>
+        <h2 class="ui-title text-2xl mb-5">
+          Top CPU <span class="ui-muted text-lg font-normal">({fmt(cpu()?.usage_percent)}%)</span>
         </h2>
-        <div class="flex flex-col gap-2">
-          <For each={procs()?.top_cpu?.slice(0, 8) ?? []} fallback={<p class="ui-muted text-sm">—</p>}>
+        <div class="flex flex-col gap-3">
+          <For each={procs()?.top_cpu?.slice(0, 8) ?? []} fallback={<p class="ui-muted text-base">—</p>}>
             {(p) => (
-              <div class="flex items-center gap-3">
-                <div class="text-sm font-mono" style={{ width: "180px", "white-space": "nowrap", overflow: "hidden", "text-overflow": "ellipsis" }}>
+              <div class="flex items-center gap-4">
+                <div class="text-base font-mono" style={{ width: "260px", "white-space": "nowrap", overflow: "hidden", "text-overflow": "ellipsis" }}>
                   {p.name}
                 </div>
                 <div
                   style={{
                     flex: "1",
-                    height: "8px",
+                    height: "14px",
                     background: "var(--bg-elev-2)",
                     "border-radius": "var(--radius-sm)",
                     overflow: "hidden",
@@ -62,7 +62,7 @@ export const Processes: Component = () => {
                     }}
                   />
                 </div>
-                <div class="text-xs font-mono" style={{ width: "60px", "text-align": "right" }}>
+                <div class="text-sm font-mono" style={{ width: "80px", "text-align": "right" }}>
                   {fmt(p.cpu_percent, 1)}%
                 </div>
               </div>
@@ -71,33 +71,33 @@ export const Processes: Component = () => {
         </div>
       </Card>
 
-      <Card class="mt-4">
-        <h2 class="ui-title text-lg mb-3">GPU VRAM top</h2>
-        <div class="flex flex-col gap-2">
-          <For each={gpu()?.top_processes?.slice(0, 5) ?? []} fallback={<p class="ui-muted text-sm">—</p>}>
+      <Card class="mt-6">
+        <h2 class="ui-title text-2xl mb-5">GPU VRAM top</h2>
+        <div class="flex flex-col gap-3">
+          <For each={gpu()?.top_processes?.slice(0, 5) ?? []} fallback={<p class="ui-muted text-base">—</p>}>
             {(p) => (
-              <div class="flex items-center gap-3">
-                <div class="text-sm font-mono" style={{ width: "200px", "white-space": "nowrap", overflow: "hidden", "text-overflow": "ellipsis" }}>
+              <div class="flex items-center gap-4">
+                <div class="text-base font-mono" style={{ width: "280px", "white-space": "nowrap", overflow: "hidden", "text-overflow": "ellipsis" }}>
                   {p.name}
                 </div>
-                <div class="ui-muted text-xs">PID {p.pid}</div>
-                <div class="text-xs font-mono ml-auto">{fmt(p.vram_mb, 0)} MB</div>
+                <div class="ui-muted text-sm">PID {p.pid}</div>
+                <div class="text-sm font-mono ml-auto">{fmt(p.vram_mb, 0)} MB</div>
               </div>
             )}
           </For>
         </div>
       </Card>
 
-      <Card class="mt-4">
-        <h2 class="ui-title text-lg mb-3">Per-core CPU</h2>
-        <div class="grid grid-cols-8 gap-2">
+      <Card class="mt-6">
+        <h2 class="ui-title text-2xl mb-5">Per-core CPU</h2>
+        <div class="grid grid-cols-8 gap-3">
           <For each={cpu()?.per_core ?? []}>
             {(v, i) => (
               <div class="flex flex-col items-center">
                 <div
                   style={{
                     width: "100%",
-                    height: "40px",
+                    height: "90px",
                     background: "var(--bg-elev-2)",
                     "border-radius": "var(--radius-sm)",
                     position: "relative",
@@ -115,25 +115,25 @@ export const Processes: Component = () => {
                     }}
                   />
                 </div>
-                <div class="ui-muted text-xs mt-1 font-mono">{i()}</div>
+                <div class="ui-muted text-sm mt-2 font-mono">{i()}</div>
               </div>
             )}
           </For>
         </div>
       </Card>
 
-      <div class="grid grid-cols-3 gap-4 mt-4">
+      <div class="grid grid-cols-3 gap-6 mt-6">
         <Card>
-          <h3 class="ui-title text-sm mb-2">CPU</h3>
-          <Sparkline values={cpuHist()} max={100} width={300} height={60} />
+          <h3 class="ui-title text-lg mb-3">CPU</h3>
+          <Sparkline values={cpuHist()} max={100} width={320} height={140} />
         </Card>
         <Card>
-          <h3 class="ui-title text-sm mb-2">GPU</h3>
-          <Sparkline values={gpuHist()} max={100} width={300} height={60} />
+          <h3 class="ui-title text-lg mb-3">GPU</h3>
+          <Sparkline values={gpuHist()} max={100} width={320} height={140} />
         </Card>
         <Card>
-          <h3 class="ui-title text-sm mb-2">RAM</h3>
-          <Sparkline values={memHist()} max={100} width={300} height={60} />
+          <h3 class="ui-title text-lg mb-3">RAM</h3>
+          <Sparkline values={memHist()} max={100} width={320} height={140} />
         </Card>
       </div>
     </div>

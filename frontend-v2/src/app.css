@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
 
+html {
+  /* 1100×3840 portrait is a very tall viewport. Bump the base font-size so
+     all rem-based Tailwind utilities scale up accordingly. */
+  font-size: 20px;
+}
+
 html, body, #root {
   height: 100%;
   margin: 0;
@@ -24,14 +30,14 @@ html, body, #root {
 .ui-card {
   background: var(--bg-elev-1);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
+  border-radius: var(--radius-lg);
+  padding: 28px;
   box-shadow: var(--shadow-soft);
 }
 
 .ui-card-lg {
-  padding: 24px;
-  border-radius: var(--radius-lg);
+  padding: 40px;
+  border-radius: var(--radius-xl);
 }
 
 .ui-btn {
