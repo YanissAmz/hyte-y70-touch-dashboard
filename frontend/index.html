@@ -498,34 +498,6 @@
         </div>
       </section>
 
-      <!-- PAGE 7: OLLAMA CHAT -->
-      <section id="page-ollama" class="page">
-        <div class="page-title-bar ollama-title-bar">
-          <h1 class="page-title" style="color:var(--purple)">AI CHAT</h1>
-          <div class="ollama-model-row">
-            <select id="ollama-model-select" class="ollama-model-select"></select>
-            <button class="ollama-clear-btn" id="ollama-clear" title="Effacer la conversation">&#x1F5D1;</button>
-          </div>
-        </div>
-
-        <div class="ollama-messages" id="ollama-messages">
-          <div class="ollama-welcome">
-            <div class="ollama-welcome-icon">&#x1F916;</div>
-            <div class="ollama-welcome-text">Prêt à discuter</div>
-          </div>
-        </div>
-
-        <div class="ollama-input-bar">
-          <input type="text" id="ollama-input" class="ollama-input" placeholder="Pose une question…" autocomplete="off">
-          <button class="ollama-send-btn" id="ollama-send">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
-        </div>
-      </section>
-
       <!-- PAGE 8: SETTINGS -->
       <section id="page-settings" class="page">
         <div class="page-title-bar">
@@ -602,7 +574,6 @@
       <span class="dot" data-page="page-controls"></span>
       <span class="dot" data-page="page-sysinfo"></span>
       <span class="dot" data-page="page-launcher"></span>
-      <span class="dot" data-page="page-ollama"></span>
       <span class="dot" data-page="page-settings"></span>
     </nav>
 
@@ -625,7 +596,6 @@
   <script src="/js/pages/sysinfo.js"></script>
   <script src="/js/pages/browser.js"></script>
   <script src="/js/pages/launcher.js"></script>
-  <script src="/js/pages/ollama.js"></script>
   <script src="/js/pages/settings.js"></script>
   <script src="/js/app.js"></script>
 </body>

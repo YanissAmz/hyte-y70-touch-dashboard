@@ -130,8 +130,7 @@ function initTouch() {
       // Vertical scroll within current page
       var page = pages[currentPage];
       if (page) {
-        var scrollTarget = page.querySelector('.ollama-messages') || page;
-        scrollTarget.scrollTop -= (t.clientY - lastY);
+        page.scrollTop -= (t.clientY - lastY);
       }
       lastY = t.clientY;
       e.preventDefault();
