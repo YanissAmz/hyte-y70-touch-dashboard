@@ -1,5 +1,7 @@
 import { createSignal, Match, Switch, onMount, type Component } from "solid-js";
 import { startWs } from "~/stores/ws";
+import { startAmbilight } from "~/stores/ambilight";
+import { startIdle } from "~/stores/idle";
 import { Debug } from "~/pages/Debug";
 import { Design } from "~/pages/Design";
 import { Main } from "~/pages/Main";
@@ -11,6 +13,7 @@ import { Sysinfo } from "~/pages/Sysinfo";
 import { Launcher } from "~/pages/Launcher";
 import { Browser } from "~/pages/Browser";
 import { GameCenter } from "~/pages/GameCenter";
+import { Ambient } from "~/pages/Ambient";
 import { PageTrack, Page } from "~/components/PageTrack";
 
 type Route = "dashboard" | "debug" | "design";
@@ -33,15 +36,29 @@ const Dashboard: Component = () => (
     <Page id="settings"><Settings /></Page>
     <Page id="launcher"><Launcher /></Page>
     <Page id="browser"><Browser /></Page>
+    <Page id="ambient"><Ambient /></Page>
   </PageTrack>
 );
+
+function goToAmbient(): void {
+  const track = document.querySelector<HTMLElement>(".page-track");
+  if (!track) return;
+  track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
+}
 
 export const App: Component = () => {
   const [route, setRoute] = createSignal<Route>(readHash());
 
   onMount(() => {
     startWs();
+    startAmbilight();
     window.addEventListener("hashchange", () => setRoute(readHash()));
+
+    // Only install idle redirect on the dashboard route — not on debug/design
+    if (route() === "dashboard") {
+      // Wait a tick so the PageTrack exists in the DOM
+      window.setTimeout(() => startIdle(goToAmbient, 120_000), 50);
+    }
   });
 
   return (
