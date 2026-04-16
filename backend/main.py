@@ -369,10 +369,33 @@ async def bluetooth_connect(data: dict = Body(...)):
     return {"status": "ok" if success else "error", "output": out.strip()}
 
 
+# ── Games ────────────────────────────────────────────────────────────────────
+
+@app.get("/api/games")
+async def api_games():
+    from backend.controllers.games import list_games
+    return list_games()
+
+
+@app.post("/api/games/launch")
+async def api_games_launch(payload: dict = Body(...)):
+    from backend.controllers.games import launch_game
+    game_id = payload.get("id")
+    if not isinstance(game_id, str):
+        return {"status": "error", "message": "missing id"}
+    return launch_game(game_id)
+
+
 # Serve static files (CSS, JS)
 app.mount("/css", StaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
 app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
 app.mount("/wallpapers", StaticFiles(directory=str(WALLPAPERS_DIR)), name="wallpapers")
+
+# Game icons (read-only mount on the system icons dir, scoped to game-launchers/)
+from pathlib import Path as _Path
+_GAME_ICONS_DIR = _Path.home() / ".local" / "share" / "icons" / "game-launchers"
+if _GAME_ICONS_DIR.exists():
+    app.mount("/api/games/icons", StaticFiles(directory=str(_GAME_ICONS_DIR)), name="game_icons")
 
 # v2 frontend (SolidJS + Vite) — served alongside /, webview will flip in a later phase.
 if FRONTEND_V2_DIR.exists():
