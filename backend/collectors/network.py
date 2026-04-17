@@ -219,7 +219,8 @@ async def collect_wifi_scan() -> dict:
 
     networks = []
     seen = set()
-    current_ssid, _ = await _get_wifi_info()
+    iface = _detect_active_interface()
+    current_ssid, _ = await _get_wifi_info(iface)
 
     for line in out.splitlines():
         parts = line.split(":")
