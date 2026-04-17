@@ -11,13 +11,32 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+}
+
+/* html carries the base --bg so the gradient on body composites over it
+   properly. #root is kept transparent — if it painted --bg, the body
+   gradient would be completely occluded. */
+html { background: var(--bg); }
+
+/* Ambilight room-light — soft gradients at top + bottom of the page
+   layered over --bg. Low alpha so text/cards remain readable; the
+   Ambient page has an opaque black bg on its own root div so its
+   wallpaper fully covers this. */
+body {
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 0%,
+      rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.45),
+      transparent 70%),
+    radial-gradient(ellipse 80% 55% at 50% 100%,
+      rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.35),
+      transparent 70%),
+    var(--bg);
 }
 
 *, *::before, *::after { box-sizing: border-box; }

@@ -1,10 +1,13 @@
 import { onMount, onCleanup, createEffect, type Component } from "solid-js";
+import { wsSignals } from "~/stores/ws";
 
 type Props = {
   values: number[];
   max?: number;
   height?: number;
   fill?: boolean;
+  /** Override accent colour. Defaults to the live ambilight tint. */
+  color?: string;
 };
 
 export const Sparkline: Component<Props> = (props) => {
@@ -42,9 +45,23 @@ export const Sparkline: Component<Props> = (props) => {
     const range = Math.max(max, 1);
     const stepX = cssW / (values.length - 1);
 
-    const root = getComputedStyle(document.documentElement);
-    const accent = root.getPropertyValue("--accent").trim() || "#7DAAFF";
-    const glow   = root.getPropertyValue("--accent-glow").trim() || "rgba(125,170,255,0.18)";
+    // Prefer the live ambilight signal over the CSS var so the canvas
+    // repaints on every WS update (getComputedStyle reads don't
+    // re-trigger a createEffect). Fallback to CSS / hardcoded default.
+    const ambi = wsSignals.ambilight.value();
+    let accent: string;
+    let glow: string;
+    if (props.color) {
+      accent = props.color;
+      glow = props.color;
+    } else if (ambi) {
+      accent = `rgb(${ambi.r}, ${ambi.g}, ${ambi.b})`;
+      glow   = `rgba(${ambi.r}, ${ambi.g}, ${ambi.b}, 0.22)`;
+    } else {
+      const root = getComputedStyle(document.documentElement);
+      accent = root.getPropertyValue("--accent").trim() || "#7DAAFF";
+      glow   = root.getPropertyValue("--accent-glow").trim() || "rgba(125,170,255,0.18)";
+    }
 
     ctx.strokeStyle = accent;
     ctx.lineWidth = 2;
@@ -74,7 +91,11 @@ export const Sparkline: Component<Props> = (props) => {
     if (wrap) ro.observe(wrap);
   });
   onCleanup(() => ro?.disconnect());
-  createEffect(() => { void props.values; draw(); });
+  createEffect(() => {
+    void props.values;
+    void wsSignals.ambilight.value();
+    draw();
+  });
 
   return (
     <div ref={wrap} style={{ width: "100%", height: `${props.height ?? 60}px` }}>
