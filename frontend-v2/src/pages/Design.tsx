@@ -76,7 +76,7 @@ export const Design: Component = () => {
 
       <h2 class="ui-title text-xl mt-8 mb-3">Sparkline</h2>
       <Card>
-        <Sparkline values={sampleValues} max={100} width={980} height={120} />
+        <Sparkline values={sampleValues} max={100} height={120} />
       </Card>
 
       <h2 class="ui-title text-xl mt-8 mb-3">Modal</h2>

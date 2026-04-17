@@ -113,17 +113,17 @@ export const Sysinfo: Component = () => {
         <div class="grid grid-cols-3 gap-5">
           <div>
             <div class="ui-dim text-xs uppercase tracking-wider mb-1">CPU</div>
-            <Sparkline values={cpuTempHist()} max={100} width={320} height={160} />
+            <Sparkline values={cpuTempHist()} max={100} height={160} />
             <div class="ui-muted text-sm mt-1">{fmt(cpu()?.temp_c)}°C</div>
           </div>
           <div>
             <div class="ui-dim text-xs uppercase tracking-wider mb-1">GPU</div>
-            <Sparkline values={gpuTempHist()} max={100} width={320} height={160} />
+            <Sparkline values={gpuTempHist()} max={100} height={160} />
             <div class="ui-muted text-sm mt-1">{fmt(gpu()?.temp_c)}°C</div>
           </div>
           <div>
             <div class="ui-dim text-xs uppercase tracking-wider mb-1">NVMe</div>
-            <Sparkline values={diskTempHist()} max={100} width={320} height={160} />
+            <Sparkline values={diskTempHist()} max={100} height={160} />
             <div class="ui-muted text-sm mt-1">{fmt(disk()?.nvme_temp_c)}°C</div>
           </div>
         </div>
@@ -135,12 +135,12 @@ export const Sysinfo: Component = () => {
         <div class="grid grid-cols-2 gap-5">
           <div>
             <div class="ui-dim text-xs uppercase tracking-wider mb-1">Read</div>
-            <Sparkline values={ioReadHist()} width={500} height={160} />
+            <Sparkline values={ioReadHist()} height={160} />
             <div class="ui-muted text-sm mt-1">{fmt((disk()?.io_read_bps ?? 0) / 1e6, 1)} MB/s</div>
           </div>
           <div>
             <div class="ui-dim text-xs uppercase tracking-wider mb-1">Write</div>
-            <Sparkline values={ioWriteHist()} width={500} height={160} />
+            <Sparkline values={ioWriteHist()} height={160} />
             <div class="ui-muted text-sm mt-1">{fmt((disk()?.io_write_bps ?? 0) / 1e6, 1)} MB/s</div>
           </div>
         </div>

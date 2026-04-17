@@ -125,15 +125,15 @@ export const Processes: Component = () => {
       <div class="grid grid-cols-3 gap-6 mt-6">
         <Card>
           <h3 class="ui-title text-lg mb-3">CPU</h3>
-          <Sparkline values={cpuHist()} max={100} width={320} height={140} />
+          <Sparkline values={cpuHist()} max={100} height={140} />
         </Card>
         <Card>
           <h3 class="ui-title text-lg mb-3">GPU</h3>
-          <Sparkline values={gpuHist()} max={100} width={320} height={140} />
+          <Sparkline values={gpuHist()} max={100} height={140} />
         </Card>
         <Card>
           <h3 class="ui-title text-lg mb-3">RAM</h3>
-          <Sparkline values={memHist()} max={100} width={320} height={140} />
+          <Sparkline values={memHist()} max={100} height={140} />
         </Card>
       </div>
     </div>

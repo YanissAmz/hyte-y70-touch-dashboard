@@ -3,10 +3,52 @@ import time
 
 import psutil
 
-from backend.config import NETWORK_INTERFACE
+from backend.config import NETWORK_INTERFACE as _FALLBACK_IFACE
 
 _prev_net = None
 _prev_ts = None
+
+# Per-interface byte counters so switching interfaces doesn't break throughput calc.
+_prev_counters: dict = {}
+
+
+def _detect_active_interface() -> str:
+    """Pick the active network interface. Priority:
+       1. Ethernet (en*/eth*) UP with a non-link-local IPv4.
+       2. WiFi (wl*) UP with a non-link-local IPv4.
+       3. Fallback to config NETWORK_INTERFACE.
+    """
+    stats = psutil.net_if_stats()
+    addrs = psutil.net_if_addrs()
+    candidates_eth = []
+    candidates_wifi = []
+    for name, st in stats.items():
+        if not st.isup or name == "lo" or name.startswith(("docker", "br-", "veth", "tailscale")):
+            continue
+        ips = [a.address for a in addrs.get(name, []) if a.family.name == "AF_INET" and not a.address.startswith("169.254.")]
+        if not ips:
+            continue
+        if name.startswith(("en", "eth")):
+            candidates_eth.append(name)
+        elif name.startswith(("wl", "wlan")):
+            candidates_wifi.append(name)
+    if candidates_eth:
+        return candidates_eth[0]
+    if candidates_wifi:
+        return candidates_wifi[0]
+    return _FALLBACK_IFACE
+
+
+def _is_wireless(iface: str) -> bool:
+    return iface.startswith(("wl", "wlan"))
+
+
+def _link_speed_mbps(iface: str) -> int | None:
+    try:
+        with open(f"/sys/class/net/{iface}/speed") as f:
+            return int(f.read().strip())
+    except Exception:
+        return None
 
 
 async def _run_cmd(cmd: list[str], timeout: float = 5) -> str:
@@ -20,9 +62,11 @@ async def _run_cmd(cmd: list[str], timeout: float = 5) -> str:
         return ""
 
 
-async def _get_wifi_info() -> tuple[str, int | None]:
-    """SSID + fréquence en un seul appel 'iw dev link' (remplace iwgetid x2)."""
-    out = await _run_cmd(["iw", "dev", NETWORK_INTERFACE, "link"])
+async def _get_wifi_info(iface: str) -> tuple[str, int | None]:
+    """SSID + fréquence via 'iw dev link'. Retourne ("", None) si pas wifi."""
+    if not _is_wireless(iface):
+        return "", None
+    out = await _run_cmd(["iw", "dev", iface, "link"])
     ssid = ""
     freq = None
     for line in out.splitlines():
@@ -37,13 +81,15 @@ async def _get_wifi_info() -> tuple[str, int | None]:
     return ssid, freq
 
 
-async def _get_signal() -> int | None:
+async def _get_signal(iface: str) -> int | None:
+    if not _is_wireless(iface):
+        return None
     try:
         content = await asyncio.to_thread(
             lambda: open("/proc/net/wireless").read()
         )
         for line in content.splitlines():
-            if NETWORK_INTERFACE in line:
+            if iface in line:
                 parts = line.split()
                 return int(float(parts[2].rstrip(".")))
     except Exception:
@@ -61,8 +107,8 @@ async def _get_ping() -> float | None:
     return None
 
 
-async def _get_ip_local() -> str | None:
-    addrs = psutil.net_if_addrs().get(NETWORK_INTERFACE, [])
+async def _get_ip_local(iface: str) -> str | None:
+    addrs = psutil.net_if_addrs().get(iface, [])
     for addr in addrs:
         if addr.family.name == "AF_INET":
             return addr.address
@@ -117,34 +163,43 @@ async def _get_tailscale() -> dict:
 
 
 async def collect() -> dict:
-    global _prev_net, _prev_ts
+    global _prev_ts
     now = time.monotonic()
 
-    net_io = psutil.net_io_counters(pernic=True).get(NETWORK_INTERFACE)
+    iface = _detect_active_interface()
+    iface_type = "wifi" if _is_wireless(iface) else "ethernet"
+    net_io = psutil.net_io_counters(pernic=True).get(iface)
 
     download_bps = 0
     upload_bps = 0
-    if net_io and _prev_net and _prev_ts:
+    prev = _prev_counters.get(iface)
+    if net_io and prev and _prev_ts:
         dt = now - _prev_ts
         if dt > 0:
-            download_bps = round((net_io.bytes_sent - _prev_net.bytes_sent) / dt)
-            upload_bps = round((net_io.bytes_recv - _prev_net.bytes_recv) / dt)
-            download_bps, upload_bps = upload_bps, download_bps
+            # psutil: bytes_sent = TX (upload), bytes_recv = RX (download).
+            download_bps = round((net_io.bytes_recv - prev.bytes_recv) / dt)
+            upload_bps   = round((net_io.bytes_sent - prev.bytes_sent) / dt)
 
     if net_io:
-        _prev_net = net_io
+        _prev_counters[iface] = net_io
         _prev_ts = now
 
-    # Tout en parallèle : iw link (SSID+freq), signal /proc, ping, IP locale, IP publique, tailscale
     (ssid, freq), signal, ping, ip_local, ip_public, tailscale = await asyncio.gather(
-        _get_wifi_info(), _get_signal(), _get_ping(),
-        _get_ip_local(), _get_ip_public(), _get_tailscale()
+        _get_wifi_info(iface), _get_signal(iface), _get_ping(),
+        _get_ip_local(iface), _get_ip_public(), _get_tailscale()
     )
 
     signal_percent = min(max((signal + 100) * 2, 0), 100) if signal is not None else None
 
+    # For ethernet we surface the interface name in the "ssid" slot so the UI
+    # has a single field to display (keeps the frontend simple).
+    display_name = ssid if (iface_type == "wifi" and ssid) else f"Ethernet · {iface}" if iface_type == "ethernet" else "Disconnected"
+
     return {
-        "ssid": ssid or "Disconnected",
+        "ssid": display_name,
+        "iface": iface,
+        "iface_type": iface_type,
+        "link_speed_mbps": _link_speed_mbps(iface),
         "signal_dbm": signal,
         "signal_percent": signal_percent,
         "frequency_mhz": freq,

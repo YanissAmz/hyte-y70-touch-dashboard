@@ -1,46 +1,41 @@
-import { onMount, createEffect, type Component } from "solid-js";
+import { onMount, onCleanup, createEffect, type Component } from "solid-js";
 
 type Props = {
   value: number;       // 0–100
   label?: string;
   unit?: string;
-  size?: number;       // canvas side in CSS px
-  thickness?: number;  // arc thickness
+  size?: number;       // max CSS side; auto-shrinks to parent width
+  thickness?: number;
 };
 
-/**
- * Canvas arc gauge. Reads --accent from CSS to match the active theme.
- * Canvas is sized once on mount; redraws only clear+paint (no buffer reset).
- */
 export const Gauge: Component<Props> = (props) => {
+  let wrap: HTMLDivElement | undefined;
   let canvas: HTMLCanvasElement | undefined;
-  const size = () => props.size ?? 180;
-  const thickness = () => props.thickness ?? 14;
+  let cssSide = 0;
 
-  let sized = false;
-  const ensureSized = (): CanvasRenderingContext2D | null => {
-    if (!canvas) return null;
+  const resize = (): void => {
+    if (!wrap || !canvas) return;
+    const parentW = Math.floor(wrap.clientWidth) || 200;
+    const side = Math.min(props.size ?? 400, parentW);
+    if (side === cssSide) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = side * dpr;
+    canvas.height = side * dpr;
+    canvas.style.width  = `${side}px`;
+    canvas.style.height = `${side}px`;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    if (!sized) {
-      const dpr = window.devicePixelRatio || 1;
-      const s = size();
-      canvas.width = s * dpr;
-      canvas.height = s * dpr;
-      canvas.style.width = `${s}px`;
-      canvas.style.height = `${s}px`;
-      ctx.scale(dpr, dpr);
-      sized = true;
-    }
-    return ctx;
+    if (ctx) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr); }
+    cssSide = side;
   };
 
   const draw = (): void => {
-    const ctx = ensureSized();
+    if (!canvas || cssSide === 0) return;
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const s = size();
+    const s = cssSide;
+    const t = props.thickness ?? Math.max(10, Math.round(s * 0.07));
     const cx = s / 2, cy = s / 2;
-    const radius = (s - thickness()) / 2;
+    const radius = (s - t) / 2;
     const start = -Math.PI * 1.25;
     const end   = Math.PI * 0.25;
     const pct = Math.max(0, Math.min(1, props.value / 100));
@@ -55,7 +50,7 @@ export const Gauge: Component<Props> = (props) => {
     ctx.clearRect(0, 0, s, s);
 
     ctx.lineCap = "round";
-    ctx.lineWidth = thickness();
+    ctx.lineWidth = t;
     ctx.strokeStyle = dim;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, start, end);
@@ -79,8 +74,19 @@ export const Gauge: Component<Props> = (props) => {
     }
   };
 
-  onMount(draw);
+  let ro: ResizeObserver | undefined;
+  onMount(() => {
+    resize();
+    draw();
+    ro = new ResizeObserver(() => { resize(); draw(); });
+    if (wrap) ro.observe(wrap);
+  });
+  onCleanup(() => ro?.disconnect());
   createEffect(draw);
 
-  return <canvas ref={canvas} />;
+  return (
+    <div ref={wrap} style={{ width: "100%", display: "flex", "justify-content": "center" }}>
+      <canvas ref={canvas} />
+    </div>
+  );
 };

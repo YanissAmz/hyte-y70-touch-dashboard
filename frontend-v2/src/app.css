@@ -4,7 +4,7 @@
 html {
   /* 1100×3840 portrait is a very tall viewport. Bump the base font-size so
      all rem-based Tailwind utilities scale up accordingly. */
-  font-size: 20px;
+  font-size: 30px;
 }
 
 html, body, #root {
@@ -90,18 +90,3 @@ html, body, #root {
 .ui-dim    { color: var(--text-dim); }
 .ui-accent { color: var(--accent); }
 
-/* Cyberpunk-only: subtle scanlines overlay on bg */
-[data-theme="c"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 3px,
-    rgba(0, 255, 255, 0.03) 3px,
-    rgba(0, 255, 255, 0.03) 4px
-  );
-  z-index: 50;
-}

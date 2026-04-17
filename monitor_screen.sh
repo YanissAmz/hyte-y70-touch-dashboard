@@ -18,6 +18,44 @@ _detect_hyte_connector() {
     '
 }
 
+_detect_hdmi_connector() {
+    # Première sortie HDMI connectée (= TV).
+    xrandr --query 2>/dev/null | awk '
+        /^HDMI[^[:space:]]* connected/ && !/disconnected/ { print $1; exit }
+    '
+}
+
+_configure_displays() {
+    # Applique la config xrandr persistante : HDMI primary (GNOME top bar + dock y vont),
+    # HYTE rotate right (panneau monté en portrait, panel natif est 3840x1100 landscape),
+    # HYTE à droite de HDMI. Sans hardcoding du nom de connecteur — ça survit aux
+    # changements amdgpu/nvidia (DP-0 → DisplayPort-3 → …).
+    local hyte hdmi cur_w cur_h
+    hyte=$(_detect_hyte_connector)
+    hdmi=$(_detect_hdmi_connector)
+    [ -z "$hyte" ] && return
+
+    # Ne réappliquer que si la géométrie actuelle n'est pas déjà portrait (évite de
+    # flasher l'écran à chaque restart de monitor_screen.sh).
+    read -r cur_w cur_h <<<"$(xrandr --listmonitors 2>/dev/null | awk -v h="$hyte" '
+        $NF == h { split($3, a, "[/x+]"); print a[1], a[3]; exit }
+    ')"
+    if [ "$cur_w" = "1100" ] && [ "$cur_h" = "3840" ] && [ -n "$hdmi" ]; then
+        # Vérifier que HDMI est primary — sinon GNOME barre reste sur HYTE.
+        if xrandr --listmonitors 2>/dev/null | grep -q "^ 0:.*\*$hdmi\b"; then
+            return
+        fi
+    fi
+
+    if [ -n "$hdmi" ]; then
+        xrandr --output "$hdmi" --auto --primary \
+               --output "$hyte" --auto --rotate right --right-of "$hdmi" 2>/dev/null
+    else
+        xrandr --output "$hyte" --auto --rotate right --primary 2>/dev/null
+    fi
+    sleep 1
+}
+
 _ensure_backend() {
     [ -f "$SUSPEND_FLAG" ] && return
     if ! pgrep -f "uvicorn backend.main:app" >/dev/null 2>&1; then
@@ -52,7 +90,8 @@ _map_touch() {
     done
 }
 
-# Boot : touch mapping + services
+# Boot : config xrandr persistante + touch mapping + services
+_configure_displays
 _map_touch
 _ensure_backend
 _ensure_webview
@@ -77,6 +116,7 @@ while true; do
     _ensure_webview
 
     # Re-map touch périodiquement — GNOME peut le reset après hotplug/settings
+    _configure_displays
     _map_touch
 
     sleep 30
