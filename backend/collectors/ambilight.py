@@ -19,7 +19,7 @@ from watchfiles import awatch
 
 COLOR_FILE    = Path("/tmp/ambilight-color")
 STALE_SECONDS = 30.0
-MIN_DELTA     = 4
+MIN_DELTA     = 2
 
 FALLBACK = {"r": 2, "g": 5, "b": 20}
 
