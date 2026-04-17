@@ -13,7 +13,8 @@ export DISPLAY="${DISPLAY:-:0}"
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 LAST_EVENT=0
-DEBOUNCE_MS=200
+DEBOUNCE_MS=2000    # GNOME fires 3-6 MonitorsChanged during a plug/unplug burst
+COOLDOWN_MS=5000    # don't restart webview more than once per 5s
 
 _now_ms() { echo $(($(date +%s%N) / 1000000)); }
 
@@ -24,12 +25,19 @@ _handle_event() {
         return
     fi
     LAST_EVENT=$now
-    # Small settling delay so xrandr --query returns the new state.
-    sleep 0.25
+    # Wait a bit longer so GNOME's burst settles and xrandr sees the final state.
+    sleep 1
     "$SCRIPT_DIR/configure-displays.sh" >/dev/null 2>&1 || true
-    systemctl --user try-restart hyte-webview.service 2>/dev/null || true
+    # Only restart the webview if cooldown elapsed — avoids the systemd
+    # start-limit when GNOME emits repeated events at login.
+    if (( now - LAST_RESTART > COOLDOWN_MS )); then
+        LAST_RESTART=$now
+        systemctl --user try-restart hyte-webview.service 2>/dev/null || true
+    fi
     logger -t hyte-display-listener "reconfigured after MonitorsChanged"
 }
+
+LAST_RESTART=0
 
 # One reconfig at boot so we don't rely solely on a hotplug.
 "$SCRIPT_DIR/configure-displays.sh" >/dev/null 2>&1 || true
