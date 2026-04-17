@@ -47,7 +47,8 @@ export const GameCenter: Component = () => {
           flex: "1 1 0", "min-height": 0,
           display: "flex", "align-items": "center", "justify-content": "center",
           padding: "40px", "text-align": "center",
-          background: "var(--bg-elev-1)", "border-radius": "32px", border: "1px solid var(--border)",
+          background: "var(--card-surface)", "border-radius": "32px", border: "1px solid var(--border)",
+          "box-shadow": "var(--card-shadow)",
         }}>
           <div>
             <div style={{ "font-size": "48px", "font-weight": "700", color: "var(--text-muted)" }}>No games found</div>
@@ -76,14 +77,14 @@ export const GameCenter: Component = () => {
                     "aspect-ratio": "3 / 4",
                     "border-radius": "28px",
                     border: "1px solid var(--border)",
-                    background: "var(--bg-elev-1)",
+                    background: "var(--card-surface)",
                     cursor: "pointer",
                     position: "relative",
                     overflow: "hidden",
                     transform: active() ? "scale(0.96)" : "scale(1)",
                     "box-shadow": active()
-                      ? "0 0 0 4px var(--accent-glow), var(--shadow-soft)"
-                      : "var(--shadow-soft)",
+                      ? "0 0 0 4px var(--accent-glow), var(--card-shadow)"
+                      : "var(--card-shadow)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                   }}
                 >
@@ -148,7 +149,7 @@ export const GameCenter: Component = () => {
             "font-weight": "600",
             "border-radius": "20px",
             "z-index": 200,
-            "box-shadow": "var(--shadow-soft)",
+            "box-shadow": "var(--card-shadow)",
           }}>
             {t()}
           </div>

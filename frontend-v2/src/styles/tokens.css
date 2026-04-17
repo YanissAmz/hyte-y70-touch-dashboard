@@ -53,10 +53,10 @@
 }
 
 /* Ambilight-driven tokens — defined AFTER the theme blocks so they apply
-   to every theme and override the static --accent family. --ambi-r/g/b
-   are set by stores/ambilight.ts and lerped at 30 Hz. Tokens below
-   derive colours from those raw components so anything consuming them
-   animates automatically.
+   to every theme and override only the parts that are worth animating live.
+   Keep the full-page surfaces mostly static, but let the cards themselves
+   breathe with the TV colour so the dashboard still feels alive from a
+   distance without repainting the whole theme on every tick.
 
    - --ambi-accent : raw ambilight, good for sparkline strokes, progress
      fills, small accent dots — saturated enough on dark bg.
@@ -80,49 +80,44 @@ html[data-theme="c"],
     rgb(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255)) 45%,
     white);
   --ambi-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.35);
-  /* Card halos — bumped high because adjacent cards occlude outward
-     shadows in the packed grid; we compensate with intensity. */
-  --ambi-halo: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.45);
+  /* Card halos — bumped a touch so the cards still feel "energised"
+     even though the heavy full-page tint is kept under control. */
+  --ambi-halo: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.48);
   /* Card borders — clearly visible liseré on dark bg. */
-  --ambi-border: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.55);
+  --ambi-border: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.64);
   /* Inner glow — reads as "lit from edges" inside each card without
      touching content. */
   --ambi-inner: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.18);
+  --card-fill-top: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.21);
+  --card-fill-mid: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.10);
+  --card-fill-bottom: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.04);
+  --card-inner-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.14);
+  --card-surface: linear-gradient(180deg,
+      var(--card-fill-top) 0%,
+      var(--card-fill-mid) 34%,
+      var(--card-fill-bottom) 100%),
+    radial-gradient(circle at 50% 0%,
+      var(--card-inner-glow) 0%,
+      transparent 70%),
+    var(--bg-elev-1);
 
-  /* Make the whole accent family ambilight-driven, across all themes.
+  /* Make the accent family ambilight-driven, across all themes.
      Semantic colours (--success, --warn, --danger) intentionally stay
      static — they carry meaning (OK / warning / alert) that shouldn't
      shift with the TV. Body text and labels stay --text / --text-muted
-     for readability. Card borders + shadow + body background are
-     ambilight-tinted so the whole dashboard feels lit by the room. */
+     for readability. Card borders + a lighter live glow are tinted,
+     but the heavy surface fills remain static for performance. */
   --accent:        var(--ambi-accent);
   --accent-strong: var(--ambi-hero);
   --accent-glow:   var(--ambi-glow);
   --border:        var(--ambi-border);
-
-  /* Surface tints — blend the live ambi colour into each elevation.
-     Using color-mix (WebKit 15.4+) with the rgb(var...) pattern we
-     already proved works on the debug swatch; calc() inside rgb()
-     channels rendered inconsistently in WebKit2GTK.
-     - --bg:        6% ambi on #08080A. Unifies the page background.
-     - --bg-elev-1: 22% ambi on #12131A. Cards take the TV lighting.
-     - --bg-elev-2: 18% ambi on #1A1C26. Inner bars / inputs. */
-  --bg: color-mix(in srgb,
-    rgb(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255)) 6%,
-    #08080A);
-  --bg-elev-1: color-mix(in srgb,
-    rgb(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255)) 22%,
-    #12131A);
-  --bg-elev-2: color-mix(in srgb,
-    rgb(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255)) 18%,
-    #1A1C26);
-  /* Triple-layer shadow: depth (dark drop) + outer ambi halo (softens
-     the grid edges) + inset ambi glow (reads as "lit from inside the
-     card edge"). The inset is what makes the effect pop on packed
-     grids where outward halos get occluded by adjacent cards. */
-  --shadow-soft:   0 4px 20px rgba(0, 0, 0, 0.55),
-                   0 0 50px var(--ambi-halo),
-                   inset 0 0 40px var(--ambi-inner);
+  /* Lightweight live card halo. Keep it visibly ambilight-tinted but much
+     cheaper than the old full-surface treatment. */
+  --shadow-soft:   0 4px 20px rgba(0, 0, 0, 0.50),
+                   0 0 26px rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.28);
+  --card-shadow:   var(--shadow-soft),
+                   inset 0 1px 0 rgba(255, 255, 255, 0.04),
+                   inset 0 0 28px var(--card-inner-glow);
 }
 
 [data-theme="b"] {

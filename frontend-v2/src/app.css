@@ -47,11 +47,11 @@ body {
 /* -- Primitives -------------------------------------------------------- */
 
 .ui-card {
-  background: var(--bg-elev-1);
+  background: var(--card-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 28px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--card-shadow);
 }
 
 .ui-card-lg {
@@ -108,4 +108,3 @@ body {
 .ui-muted  { color: var(--text-muted); }
 .ui-dim    { color: var(--text-dim); }
 .ui-accent { color: var(--accent); }
-

@@ -100,12 +100,13 @@ export const Disk: Component = () => {
                 onClick={() => navigate(e)}
                 style={{
                   padding: "18px 22px",
-                  background: "var(--bg-elev-1)",
+                  background: "var(--card-surface)",
                   border: "1px solid var(--border)",
                   "border-radius": "16px",
                   cursor: e.is_dir ? "pointer" : "default",
                   position: "relative",
                   overflow: "hidden",
+                  "box-shadow": "var(--card-shadow)",
                 }}
               >
                 <div style={{

@@ -33,10 +33,10 @@ export const Processes: Component = () => {
   void track;
 
   const card = {
-    background: "var(--bg-elev-1)",
+    background: "var(--card-surface)",
     border: "1px solid var(--border)",
     "border-radius": "32px",
-    "box-shadow": "var(--shadow-soft)",
+    "box-shadow": "var(--card-shadow)",
     padding: "32px",
   } as const;
 
