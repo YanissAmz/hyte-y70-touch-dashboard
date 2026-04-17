@@ -12,8 +12,9 @@ import { wsSignals } from "~/stores/ws";
 
 const LERP_HZ = 30;
 const LERP_DT = 1000 / LERP_HZ;
-// 0.35 → ~3 frames to 90% = ~100ms smoothing. Enough to smooth visible
-// stepping on the CSS blends without adding perceptible lag vs. Hue/Govee.
+// 0.35 → ~5.3 frames to 90% (log(0.1)/log(0.65)) = ~180ms smoothing at 30 Hz.
+// Enough to smooth visible stepping on the CSS blends without adding
+// perceptible lag vs. Hue/Govee.
 const LERP_SPEED = 0.35;
 
 let running = false;

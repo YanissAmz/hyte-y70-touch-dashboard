@@ -55,19 +55,26 @@ async def run(broadcast, interval: float = 0.5) -> None:
     """
     _ = interval
 
-    async def emit(last: dict | None) -> dict:
+    # Shared state with _stale_watcher: when it emits FALLBACK, it flips
+    # `force_next` so the next real write bypasses the delta gate. Without
+    # this, a TV-off → TV-on transition onto a near-identical colour
+    # (paused content, game menu) could stick clients on navy.
+    state: dict = {"last": None, "force_next": False}
+
+    async def emit() -> None:
         cur = _read() or FALLBACK
-        if last is None or _abs_delta(cur, last) >= MIN_DELTA:
+        if state["force_next"] or state["last"] is None or _abs_delta(cur, state["last"]) >= MIN_DELTA:
             try:
                 await broadcast("ambilight", cur)
             except Exception:
                 pass
-        return cur
+            state["last"] = cur
+            state["force_next"] = False
 
     # Initial broadcast so the first WS client sees a colour immediately.
-    last = await emit(None)
+    await emit()
 
-    stale_task = asyncio.create_task(_stale_watcher(broadcast))
+    stale_task = asyncio.create_task(_stale_watcher(broadcast, state))
 
     try:
         # Watch the directory rather than the file — watchfiles raises if
@@ -79,15 +86,20 @@ async def run(broadcast, interval: float = 0.5) -> None:
             step=20,      # inotify debounce window in ms — 20ms keeps us TV-tight
             yield_on_timeout=False,
         ):
-            last = await emit(last)
+            await emit()
     finally:
         stale_task.cancel()
 
 
-async def _stale_watcher(broadcast) -> None:
+async def _stale_watcher(broadcast, state: dict) -> None:
     """Emit the fallback when the source file goes stale (TV off).
     1s cadence is fine — this is a state-change detector, not a throughput
-    path. When the file is being written normally, this never emits."""
+    path. When the file is being written normally, this never emits.
+
+    Flips `state["force_next"]` after emitting FALLBACK so the next real
+    write bypasses the delta gate — otherwise a TV-off → TV-on transition
+    onto a near-identical colour would stick clients on navy.
+    """
     last_was_fallback = False
     while True:
         await asyncio.sleep(1.0)
@@ -97,6 +109,8 @@ async def _stale_watcher(broadcast) -> None:
                 await broadcast("ambilight", FALLBACK)
             except Exception:
                 pass
+            state["last"] = FALLBACK
+            state["force_next"] = True
             last_was_fallback = True
         elif cur is not None:
             last_was_fallback = False
