@@ -1,6 +1,5 @@
 import { For, type Component } from "solid-js";
 import { apiPost } from "~/lib/api";
-import { Card } from "~/components/Card";
 
 type NativeApp = { name: string; icon: string; color: string; key: string };
 type WebApp    = { name: string; icon: string; color: string; url: string };
@@ -33,7 +32,6 @@ const loadUrlInWebview = (url: string): void => {
   if (wk?.messageHandlers?.dashboard) {
     wk.messageHandlers.dashboard.postMessage(url);
   } else {
-    // Fallback: open in same tab (unlikely on HYTE)
     window.location.href = url;
   }
 };
@@ -42,61 +40,79 @@ function Tile(props: { icon: string; color: string; name: string; onClick: () =>
   return (
     <div
       onClick={props.onClick}
-      class="flex flex-col items-center gap-2 py-4"
       style={{
+        display: "flex", "flex-direction": "column", "align-items": "center", "justify-content": "center", gap: "14px",
+        padding: "22px 12px",
         background: "var(--bg-elev-2)",
-        "border-radius": "var(--radius)",
+        "border-radius": "24px",
         cursor: "pointer",
-        transition: "transform var(--dur-fast) var(--ease)",
+        transition: "transform 0.15s ease",
+        "min-height": 0,
       }}
     >
-      <div
-        style={{
-          "font-size": "64px",
-          width: "120px",
-          height: "120px",
-          "border-radius": "var(--radius-lg)",
-          background: `${props.color}22`,
-          display: "flex",
-          "align-items": "center",
-          "justify-content": "center",
-        }}
-      >
+      <div style={{
+        "font-size": "80px",
+        width: "140px",
+        height: "140px",
+        "border-radius": "28px",
+        background: `${props.color}22`,
+        display: "flex",
+        "align-items": "center",
+        "justify-content": "center",
+      }}>
         {props.icon}
       </div>
-      <div class="text-lg font-semibold mt-2">{props.name}</div>
+      <div style={{ "font-size": "28px", "font-weight": "700" }}>{props.name}</div>
     </div>
   );
 }
 
 export const Launcher: Component = () => {
   const launchNative = async (key: string): Promise<void> => {
-    try {
-      await apiPost("/api/launch", { app: key });
-    } catch { /* ignore */ }
+    try { await apiPost("/api/launch", { app: key }); } catch { /* ignore */ }
   };
 
-  return (
-    <div class="p-8 pb-32">
-      <h1 class="ui-title text-4xl mb-8">Launcher</h1>
+  const card = {
+    background: "var(--bg-elev-1)",
+    border: "1px solid var(--border)",
+    "border-radius": "32px",
+    "box-shadow": "var(--shadow-soft)",
+    padding: "28px",
+  } as const;
 
-      <Card>
-        <h2 class="ui-title text-lg mb-3">Apps</h2>
-        <div style={{ display: "grid", "grid-template-columns": "repeat(3, 1fr)", gap: "12px" }}>
+  return (
+    <div style={{ height: "100vh", display: "flex", "flex-direction": "column", padding: "36px", gap: "20px", "box-sizing": "border-box" }}>
+      {/* HEADER */}
+      <header style={{ "flex-shrink": 0 }}>
+        <h1 class="ui-title" style={{ "font-size": "68px", "font-weight": "700", "line-height": "1" }}>Launcher</h1>
+      </header>
+
+      {/* NATIVE APPS */}
+      <div style={{ ...card, "flex-shrink": 0, display: "flex", "flex-direction": "column", gap: "16px" }}>
+        <div class="ui-title" style={{ "font-size": "40px", color: "var(--accent)" }}>Apps</div>
+        <div style={{ display: "grid", "grid-template-columns": "repeat(3, 1fr)", gap: "14px" }}>
           <For each={NATIVE}>
             {(a) => <Tile icon={a.icon} color={a.color} name={a.name} onClick={() => void launchNative(a.key)} />}
           </For>
         </div>
-      </Card>
+      </div>
 
-      <Card class="mt-4">
-        <h2 class="ui-title text-lg mb-3">Web</h2>
-        <div style={{ display: "grid", "grid-template-columns": "repeat(3, 1fr)", gap: "12px" }}>
+      {/* WEB APPS */}
+      <div style={{ ...card, flex: "1 1 0", "min-height": 0, display: "flex", "flex-direction": "column", gap: "16px" }}>
+        <div class="ui-title" style={{ "font-size": "40px", color: "var(--accent-2, var(--accent))" }}>Web</div>
+        <div style={{
+          flex: "1 1 0", "min-height": 0,
+          display: "grid",
+          "grid-template-columns": "repeat(3, 1fr)",
+          "grid-auto-rows": "1fr",
+          gap: "14px",
+          "overflow-y": "auto",
+        }}>
           <For each={WEB}>
             {(a) => <Tile icon={a.icon} color={a.color} name={a.name} onClick={() => loadUrlInWebview(a.url)} />}
           </For>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

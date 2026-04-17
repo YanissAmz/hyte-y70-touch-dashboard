@@ -2,7 +2,6 @@ import { createSignal, onMount, For, Show, type Component } from "solid-js";
 import { apiGet, apiPost } from "~/lib/api";
 import { theme, setTheme, type Theme } from "~/stores/theme";
 import { wsSignals } from "~/stores/ws";
-import { Card } from "~/components/Card";
 import { Button } from "~/components/Button";
 
 type Volume = { level: number; muted: boolean };
@@ -77,147 +76,160 @@ export const Settings: Component = () => {
     finally { setScanning(false); }
   };
 
-  return (
-    <div class="p-8 pb-32">
-      <h1 class="ui-title text-4xl mb-8">Settings</h1>
+  const card = {
+    background: "var(--bg-elev-1)",
+    border: "1px solid var(--border)",
+    "border-radius": "32px",
+    "box-shadow": "var(--shadow-soft)",
+    padding: "28px",
+  } as const;
 
-      {/* Theme */}
-      <Card>
-        <h2 class="ui-title text-2xl mb-4">Theme</h2>
-        <div class="flex flex-col gap-3">
+  return (
+    <div style={{ height: "100vh", display: "flex", "flex-direction": "column", padding: "36px", gap: "18px", "box-sizing": "border-box", "overflow-y": "auto" }}>
+      {/* HEADER */}
+      <header style={{ "flex-shrink": 0 }}>
+        <h1 class="ui-title" style={{ "font-size": "68px", "font-weight": "700", "line-height": "1" }}>Settings</h1>
+      </header>
+
+      {/* THEME */}
+      <div style={{ ...card, "flex-shrink": 0, display: "flex", "flex-direction": "column", gap: "14px" }}>
+        <div class="ui-title" style={{ "font-size": "40px" }}>Theme</div>
+        <div style={{ display: "flex", "flex-direction": "column", gap: "10px" }}>
           <For each={THEMES}>
             {(t) => (
               <div
                 onClick={() => setTheme(t.id)}
-                class="flex items-center justify-between py-4 px-5"
                 style={{
+                  display: "flex", "align-items": "center", "justify-content": "space-between",
+                  padding: "18px 24px",
                   background: "var(--bg-elev-2)",
-                  "border-radius": "var(--radius)",
-                  border: theme() === t.id ? "2px solid var(--accent)" : "1px solid transparent",
+                  "border-radius": "18px",
+                  border: theme() === t.id ? "3px solid var(--accent)" : "1px solid transparent",
                   cursor: "pointer",
                 }}
               >
                 <div>
-                  <div class="text-lg font-semibold">{t.label}</div>
-                  <div class="ui-muted text-sm mt-1">{t.desc}</div>
+                  <div style={{ "font-size": "28px", "font-weight": "700" }}>{t.label}</div>
+                  <div class="ui-muted" style={{ "font-size": "20px", "margin-top": "4px" }}>{t.desc}</div>
                 </div>
                 <Show when={theme() === t.id}>
-                  <span class="ui-accent font-semibold text-lg">●</span>
+                  <span style={{ "font-size": "32px", color: "var(--accent)" }}>●</span>
                 </Show>
               </div>
             )}
           </For>
         </div>
-      </Card>
+      </div>
 
-      {/* Volume */}
-      <Card class="mt-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="ui-title text-2xl">Volume</h2>
-          <Button onClick={toggleMute} size="lg">
-            {muted() ? "🔇 Muted" : `🔊 ${volume()}%`}
-          </Button>
+      {/* VOLUME + BRIGHTNESS (fused) */}
+      <div style={{ ...card, "flex-shrink": 0, display: "flex", "flex-direction": "column", gap: "24px" }}>
+        <div>
+          <div style={{ display: "flex", "justify-content": "space-between", "align-items": "baseline", "margin-bottom": "12px" }}>
+            <div class="ui-title" style={{ "font-size": "40px", color: "var(--accent)" }}>Volume</div>
+            <div style={{ display: "flex", "align-items": "baseline", gap: "14px" }}>
+              <div style={{ "font-size": "72px", "font-weight": "700", "line-height": "1" }}>
+                {muted() ? "—" : volume()}<span style={{ "font-size": "32px", color: "var(--text-muted)" }}>%</span>
+              </div>
+              <Button onClick={toggleMute} size="lg">{muted() ? "🔇" : "🔊"}</Button>
+            </div>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={volume()}
+            onInput={onVolume}
+            style={{ width: "100%", height: "64px", "accent-color": "var(--accent)" }}
+          />
         </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={volume()}
-          onInput={onVolume}
-          style={{ width: "100%", height: "56px", "accent-color": "var(--accent)" }}
-        />
-      </Card>
-
-      {/* Brightness */}
-      <Card class="mt-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="ui-title text-2xl">Brightness</h2>
-          <span class="ui-muted text-lg">{brightness()}%</span>
+        <div>
+          <div style={{ display: "flex", "justify-content": "space-between", "align-items": "baseline", "margin-bottom": "12px" }}>
+            <div class="ui-title" style={{ "font-size": "40px", color: "var(--warn)" }}>Brightness</div>
+            <div style={{ "font-size": "72px", "font-weight": "700", "line-height": "1" }}>
+              {brightness()}<span style={{ "font-size": "32px", color: "var(--text-muted)" }}>%</span>
+            </div>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={brightness()}
+            onInput={onBrightness}
+            style={{ width: "100%", height: "64px", "accent-color": "var(--accent)" }}
+          />
         </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={brightness()}
-          onInput={onBrightness}
-          style={{ width: "100%", height: "56px", "accent-color": "var(--accent)" }}
-        />
-      </Card>
+      </div>
 
-      {/* Bluetooth */}
-      <Card class="mt-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="ui-title text-2xl">Bluetooth</h2>
+      {/* BLUETOOTH */}
+      <div style={{ ...card, "flex-shrink": 0, display: "flex", "flex-direction": "column", gap: "14px" }}>
+        <div style={{ display: "flex", "justify-content": "space-between", "align-items": "baseline" }}>
+          <div class="ui-title" style={{ "font-size": "40px" }}>Bluetooth</div>
           <Button onClick={() => void scanBt()} disabled={scanning()} size="lg">
             {scanning() ? "Scanning…" : "Scan"}
           </Button>
         </div>
-        <div class="flex flex-col gap-3">
-          <For each={btDevs()} fallback={<p class="ui-muted text-base">No devices</p>}>
+        <div style={{ display: "flex", "flex-direction": "column", gap: "10px" }}>
+          <For each={btDevs()} fallback={<p class="ui-muted" style={{ "font-size": "24px", "text-align": "center", padding: "24px" }}>No devices paired</p>}>
             {(d) => (
               <div
-                class="flex items-center justify-between py-4 px-5"
-                style={{ background: "var(--bg-elev-2)", "border-radius": "var(--radius)" }}
+                style={{
+                  display: "flex", "align-items": "center", "justify-content": "space-between",
+                  padding: "18px 24px",
+                  background: "var(--bg-elev-2)",
+                  "border-radius": "18px",
+                }}
               >
                 <div>
-                  <div class="text-lg font-semibold">{d.name}</div>
-                  <div class="ui-muted text-sm mt-1">
+                  <div style={{ "font-size": "28px", "font-weight": "700" }}>{d.name}</div>
+                  <div class="ui-muted" style={{ "font-size": "20px", "margin-top": "4px" }}>
                     {d.connected ? "● Connected" : "○ Paired"}
                   </div>
                 </div>
-                <Button onClick={() => void toggleBt(d)}>
+                <Button onClick={() => void toggleBt(d)} size="lg">
                   {d.connected ? "Disconnect" : "Connect"}
                 </Button>
               </div>
             )}
           </For>
         </div>
-      </Card>
+      </div>
 
-      {/* System actions */}
-      <Card class="mt-6">
-        <h2 class="ui-title text-2xl mb-4">System</h2>
-        <div class="grid grid-cols-2 gap-3">
-          <Button size="lg" onClick={() => void apiPost("/api/screen", { action: "off" })}>
-            Screen OFF
-          </Button>
-          <Button size="lg" onClick={() => void apiPost("/api/screen", { action: "on" })}>
-            Screen ON
-          </Button>
-          <Button size="lg" onClick={() => window.location.reload()}>
-            Reload dashboard
-          </Button>
+      {/* SYSTEM ACTIONS */}
+      <div style={{ ...card, "flex-shrink": 0 }}>
+        <div class="ui-title" style={{ "font-size": "40px", "margin-bottom": "14px" }}>System</div>
+        <div style={{ display: "grid", "grid-template-columns": "1fr 1fr", gap: "14px" }}>
+          <Button size="lg" onClick={() => void apiPost("/api/screen", { action: "off" })}>Screen OFF</Button>
+          <Button size="lg" onClick={() => void apiPost("/api/screen", { action: "on" })}>Screen ON</Button>
+          <Button size="lg" onClick={() => window.location.reload()}>Reload dashboard</Button>
           <Button size="lg" onClick={() => {
             const wk = (window as unknown as { webkit?: { messageHandlers?: { dashboard?: { postMessage: (m: string) => void } } } }).webkit;
             if (wk?.messageHandlers?.dashboard) wk.messageHandlers.dashboard.postMessage("desktop-mode");
-          }}>
-            Desktop mode
-          </Button>
+          }}>Desktop mode</Button>
         </div>
-      </Card>
+      </div>
 
-      {/* About */}
-      <Card class="mt-6">
-        <h2 class="ui-title text-2xl mb-4">About</h2>
-        <div class="grid grid-cols-2 gap-4 text-base">
+      {/* ABOUT */}
+      <div style={{ ...card, "flex-shrink": 0 }}>
+        <div class="ui-title" style={{ "font-size": "36px", "margin-bottom": "14px" }}>About</div>
+        <div style={{ display: "grid", "grid-template-columns": "1fr 1fr", gap: "20px 28px" }}>
           <div>
-            <div class="ui-dim text-xs uppercase tracking-wider">Host</div>
-            <div class="font-mono mt-1">{system()?.hostname ?? "—"}</div>
+            <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>Host</div>
+            <div style={{ "font-family": "var(--font-mono)", "font-size": "26px", "font-weight": "700", "margin-top": "4px" }}>{system()?.hostname ?? "—"}</div>
           </div>
           <div>
-            <div class="ui-dim text-xs uppercase tracking-wider">OS</div>
-            <div class="font-mono mt-1">{system()?.os ?? "—"}</div>
+            <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>OS</div>
+            <div style={{ "font-family": "var(--font-mono)", "font-size": "26px", "font-weight": "700", "margin-top": "4px" }}>{system()?.os ?? "—"}</div>
           </div>
           <div>
-            <div class="ui-dim text-xs uppercase tracking-wider">Display</div>
-            <div class="font-mono mt-1">1100 × 3840 portrait</div>
+            <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>Display</div>
+            <div style={{ "font-family": "var(--font-mono)", "font-size": "26px", "font-weight": "700", "margin-top": "4px" }}>1100 × 3840</div>
           </div>
           <div>
-            <div class="ui-dim text-xs uppercase tracking-wider">Version</div>
-            <div class="font-mono mt-1">dashboard v2</div>
+            <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>Version</div>
+            <div style={{ "font-family": "var(--font-mono)", "font-size": "26px", "font-weight": "700", "margin-top": "4px" }}>dashboard v2</div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

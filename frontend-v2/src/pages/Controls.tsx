@@ -1,6 +1,5 @@
 import { createSignal, onMount, For, Show, type Component } from "solid-js";
 import { apiGet, apiPost } from "~/lib/api";
-import { Card } from "~/components/Card";
 import { Button } from "~/components/Button";
 import { TileGrid } from "~/components/TileGrid";
 
@@ -61,7 +60,7 @@ function ColorWheel(props: { onPick: (r: number, g: number, b: number) => void }
       height={300}
       onClick={pickAt}
       onTouchStart={pickAt}
-      style={{ "touch-action": "none", "border-radius": "50%", width: "500px", height: "500px" }}
+      style={{ "touch-action": "none", "border-radius": "50%", width: "480px", height: "480px" }}
     />
   );
 }
@@ -137,68 +136,85 @@ export const Controls: Component = () => {
     }
   };
 
+  const card = {
+    background: "var(--bg-elev-1)",
+    border: "1px solid var(--border)",
+    "border-radius": "32px",
+    "box-shadow": "var(--shadow-soft)",
+    padding: "28px",
+  } as const;
+
   return (
-    <div class="p-8 pb-32">
-      <h1 class="ui-title text-4xl mb-8">Controls</h1>
+    <div style={{ height: "100vh", display: "flex", "flex-direction": "column", padding: "36px", gap: "18px", "box-sizing": "border-box", "overflow-y": "auto" }}>
+      {/* HEADER */}
+      <header style={{ "flex-shrink": 0, display: "flex", "justify-content": "space-between", "align-items": "baseline" }}>
+        <h1 class="ui-title" style={{ "font-size": "68px", "font-weight": "700", "line-height": "1" }}>Controls</h1>
+        <Show when={ledStatus()}>
+          {(s) => (
+            <span
+              style={{ "font-size": "22px", "font-family": "var(--font-mono)", color: s().available ? "var(--success)" : "var(--danger)" }}
+            >
+              {s().available ? `OpenRGB · ${s().devices.length} dev` : "LEDs offline"}
+            </span>
+          )}
+        </Show>
+      </header>
 
-      {/* LED effects */}
-      <Card>
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="ui-title text-lg">LEDs</h2>
-          <Show when={ledStatus()}>
-            {(s) => (
-              <span
-                class="text-xs font-mono"
-                style={{ color: s().available ? "var(--success)" : "var(--danger)" }}
-              >
-                {s().available ? `OpenRGB · ${s().devices.length} dev` : "Offline"}
-              </span>
-            )}
-          </Show>
+      {/* LEDS */}
+      <div style={{ ...card, display: "flex", "flex-direction": "column", gap: "18px", "flex-shrink": 0 }}>
+        <div class="ui-title" style={{ "font-size": "40px", color: "var(--accent)" }}>LEDs</div>
+
+        <div>
+          <div class="ui-dim" style={{ "font-size": "22px", "text-transform": "uppercase", "letter-spacing": "2px", "margin-bottom": "12px" }}>Effects</div>
+          <TileGrid columns={3} gap={12}>
+            <For each={EFFECTS}>
+              {(name) => (
+                <Button
+                  size="lg"
+                  variant={effect() === name ? "primary" : "default"}
+                  onClick={() => applyEffect(name)}
+                >
+                  {name}
+                </Button>
+              )}
+            </For>
+          </TileGrid>
         </div>
-        <TileGrid columns={3} gap={8}>
-          <For each={EFFECTS}>
-            {(name) => (
-              <Button
-                variant={effect() === name ? "primary" : "default"}
-                onClick={() => applyEffect(name)}
-              >
-                {name}
-              </Button>
-            )}
-          </For>
-        </TileGrid>
 
-        <h3 class="ui-muted text-xs mt-4 mb-2 uppercase tracking-wider">Presets</h3>
-        <TileGrid columns={4} gap={8}>
-          <For each={PRESETS}>
-            {(p) => (
-              <button
-                class="ui-btn"
-                onClick={() => applyPreset(p)}
-                style={{
-                  "background-color": `rgb(${p.r}, ${p.g}, ${p.b})`,
-                  color: (p.r + p.g + p.b) > 380 ? "#000" : "#fff",
-                  "min-height": "var(--tap-min)",
-                }}
-              >
-                {p.name}
-              </button>
-            )}
-          </For>
-        </TileGrid>
+        <div>
+          <div class="ui-dim" style={{ "font-size": "22px", "text-transform": "uppercase", "letter-spacing": "2px", "margin-bottom": "12px" }}>Presets</div>
+          <TileGrid columns={4} gap={12}>
+            <For each={PRESETS}>
+              {(p) => (
+                <button
+                  class="ui-btn ui-btn-lg"
+                  onClick={() => applyPreset(p)}
+                  style={{
+                    "background-color": `rgb(${p.r}, ${p.g}, ${p.b})`,
+                    color: (p.r + p.g + p.b) > 380 ? "#000" : "#fff",
+                    "font-size": "24px",
+                    "font-weight": "700",
+                  }}
+                >
+                  {p.name}
+                </button>
+              )}
+            </For>
+          </TileGrid>
+        </div>
 
-        <h3 class="ui-muted text-xs mt-4 mb-2 uppercase tracking-wider">Color wheel</h3>
-        <div class="flex justify-center">
+        <div style={{ display: "flex", "justify-content": "center", "padding-top": "10px" }}>
           <ColorWheel onPick={applyColor} />
         </div>
-      </Card>
+      </div>
 
-      {/* Brightness */}
-      <Card class="mt-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="ui-title text-lg">Screen</h2>
-          <span class="ui-muted text-sm">{brightness()}%</span>
+      {/* SCREEN BRIGHTNESS */}
+      <div style={{ ...card, "flex-shrink": 0 }}>
+        <div style={{ display: "flex", "justify-content": "space-between", "align-items": "baseline", "margin-bottom": "14px" }}>
+          <div class="ui-title" style={{ "font-size": "40px", color: "var(--warn)" }}>Screen</div>
+          <div style={{ "font-size": "72px", "font-weight": "700", "line-height": "1" }}>
+            {brightness()}<span style={{ "font-size": "36px", color: "var(--text-muted)" }}>%</span>
+          </div>
         </div>
         <input
           type="range"
@@ -206,22 +222,23 @@ export const Controls: Component = () => {
           max="100"
           value={brightness()}
           onInput={onBrightness}
-          style={{ width: "100%", height: "44px", "accent-color": "var(--accent)" }}
+          style={{ width: "100%", height: "64px", "accent-color": "var(--accent)" }}
         />
-        <div class="flex gap-3 mt-3">
-          <Button onClick={() => void apiPost("/api/screen", { action: "on" })}>Screen ON</Button>
-          <Button variant="danger" onClick={() => void apiPost("/api/screen", { action: "off" })}>Screen OFF</Button>
-          <Button onClick={enterDesktopMode}>Desktop mode</Button>
+        <div style={{ display: "grid", "grid-template-columns": "1fr 1fr 1fr", gap: "12px", "margin-top": "14px" }}>
+          <Button size="lg" onClick={() => void apiPost("/api/screen", { action: "on" })}>Screen ON</Button>
+          <Button size="lg" variant="danger" onClick={() => void apiPost("/api/screen", { action: "off" })}>Screen OFF</Button>
+          <Button size="lg" onClick={enterDesktopMode}>Desktop mode</Button>
         </div>
-      </Card>
+      </div>
 
-      {/* Power profile */}
-      <Card class="mt-4">
-        <h2 class="ui-title text-lg mb-3">Power profile</h2>
-        <TileGrid columns={3} gap={8}>
+      {/* POWER PROFILE */}
+      <div style={{ ...card, "flex-shrink": 0 }}>
+        <div class="ui-title" style={{ "font-size": "36px", "margin-bottom": "14px" }}>Power profile</div>
+        <TileGrid columns={3} gap={12}>
           <For each={PROFILES}>
             {(p) => (
               <Button
+                size="lg"
                 variant={power() === p ? "primary" : "default"}
                 onClick={() => applyPower(p)}
               >
@@ -230,18 +247,15 @@ export const Controls: Component = () => {
             )}
           </For>
         </TileGrid>
-      </Card>
+      </div>
 
-      {/* Wallpapers */}
-      <Card class="mt-4">
-        <h2 class="ui-title text-lg mb-3">Wallpaper</h2>
-        <div
-          style={{
-            display: "grid",
-            "grid-template-columns": "repeat(3, 1fr)",
-            gap: "8px",
-          }}
-        >
+      {/* WALLPAPERS */}
+      <div style={{ ...card, "flex-shrink": 0, display: "flex", "flex-direction": "column", gap: "14px" }}>
+        <div style={{ display: "flex", "justify-content": "space-between", "align-items": "baseline" }}>
+          <div class="ui-title" style={{ "font-size": "40px" }}>Wallpaper</div>
+          <div class="ui-muted" style={{ "font-size": "22px" }}>{wallpapers().length} available</div>
+        </div>
+        <div style={{ display: "grid", "grid-template-columns": "repeat(3, 1fr)", gap: "12px" }}>
           <For each={wallpapers()}>
             {(name) => {
               const isActive = () => activeWallpaper() === name;
@@ -254,7 +268,7 @@ export const Controls: Component = () => {
                     "background-image": `url(/wallpapers/${name})`,
                     "background-size": "cover",
                     "background-position": "center",
-                    "border-radius": "var(--radius-sm)",
+                    "border-radius": "14px",
                     border: isActive() ? "3px solid var(--accent)" : "1px solid var(--border)",
                     "box-shadow": isActive() ? "0 0 0 6px var(--accent-glow)" : "none",
                     position: "relative",
@@ -265,20 +279,20 @@ export const Controls: Component = () => {
                 >
                   <Show when={isActive()}>
                     <div style={{
-                      position: "absolute", top: "8px", right: "8px",
-                      width: "32px", height: "32px", "border-radius": "50%",
+                      position: "absolute", top: "10px", right: "10px",
+                      width: "40px", height: "40px", "border-radius": "50%",
                       background: "var(--accent)", color: "var(--bg)",
                       display: "flex", "align-items": "center", "justify-content": "center",
-                      "font-weight": "700", "font-size": "18px",
+                      "font-weight": "700", "font-size": "22px",
                     }}>✓</div>
                   </Show>
                   <Show when={isApplying()}>
                     <div style={{
                       position: "absolute", inset: "0",
-                      background: "rgba(0,0,0,0.35)",
+                      background: "rgba(0,0,0,0.45)",
                       display: "flex", "align-items": "center", "justify-content": "center",
-                      "border-radius": "var(--radius-sm)",
-                      color: "var(--text)", "font-size": "14px", "font-weight": "600",
+                      "border-radius": "14px",
+                      color: "var(--text)", "font-size": "24px", "font-weight": "700",
                     }}>…</div>
                   </Show>
                 </div>
@@ -286,7 +300,7 @@ export const Controls: Component = () => {
             }}
           </For>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
