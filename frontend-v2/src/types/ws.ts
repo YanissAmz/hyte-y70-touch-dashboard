@@ -63,6 +63,9 @@ export type NetworkMsg = {
   type: "network";
   data: {
     ssid: string | null;
+    iface?: string;
+    iface_type?: "wifi" | "ethernet";
+    link_speed_mbps?: number | null;
     signal_dbm: number | null;
     signal_percent: number | null;
     frequency_mhz: number | null;
@@ -72,9 +75,8 @@ export type NetworkMsg = {
     upload_bps: number;
     ping_ms: number | null;
     tailscale: {
-      connected: boolean;
+      status: "connected" | "disconnected";
       ip: string | null;
-      exit_node: string | null;
     };
   };
 };

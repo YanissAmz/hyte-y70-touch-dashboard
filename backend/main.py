@@ -3,6 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import FRONTEND_V2_DIR, WALLPAPERS_DIR
@@ -176,12 +177,31 @@ async def launch_app(data: dict = Body(...)):
     return {"status": "ok", "app": app_key}
 
 
+@app.get("/api/disk/tree")
+async def disk_tree(path: str = "/home/yaniss"):
+    from backend.controllers.disk import tree
+    return await tree(path)
+
+
 @app.post("/api/wallpaper")
 async def change_wallpaper(data: dict = Body(...)):
     from backend.controllers.wallpaper import change_wallpaper
     name = data.get("name", "")
     await change_wallpaper(name)
     return {"status": "ok"}
+
+
+# Served BEFORE the /wallpapers StaticFiles mount so we can force no-cache
+# headers on current.png — otherwise WebKit caches the rendered image and
+# never picks up a new wallpaper even with ?t= query strings.
+@app.get("/wallpapers/current.png")
+async def wallpaper_current():
+    path = WALLPAPERS_DIR / "current.png"
+    return FileResponse(
+        path,
+        media_type="image/png",
+        headers={"Cache-Control": "no-store, must-revalidate", "Pragma": "no-cache"},
+    )
 
 
 @app.post("/api/wifi/connect")

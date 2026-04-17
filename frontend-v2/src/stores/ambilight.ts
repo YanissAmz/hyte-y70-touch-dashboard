@@ -8,12 +8,20 @@
 
 import { createEffect } from "solid-js";
 import { wsSignals } from "~/stores/ws";
+import { pageIndex } from "~/stores/nav";
 
 const LERP_HZ = 30;
 const LERP_DT = 1000 / LERP_HZ;
-const LERP_SPEED = 0.18;   // fraction of gap closed per frame (~4 frames to 90%)
+const LERP_SPEED = 0.18;
 
 let running = false;
+let timer: number | null = null;
+
+function isAmbientVisible(): boolean {
+  const track = document.querySelector(".page-track");
+  if (!track) return false;
+  return pageIndex() === track.children.length - 1;
+}
 
 function update(): void {
   const target = wsSignals.ambilight.value();
@@ -38,10 +46,17 @@ export function startAmbilight(): void {
   document.documentElement.style.setProperty("--ambi-r", "0");
   document.documentElement.style.setProperty("--ambi-g", "0");
   document.documentElement.style.setProperty("--ambi-b", "0");
-  window.setInterval(update, LERP_DT);
 
-  // No-op effect to keep the signal "hot"; reactivity naturally picks up
-  // every target update so the lerp runs only for non-zero gaps.
+  createEffect(() => {
+    const visible = isAmbientVisible();
+    if (visible && timer == null) {
+      timer = window.setInterval(update, LERP_DT);
+    } else if (!visible && timer != null) {
+      window.clearInterval(timer);
+      timer = null;
+    }
+  });
+
   createEffect(() => {
     wsSignals.ambilight.value();
   });

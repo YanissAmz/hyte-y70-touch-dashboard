@@ -1,43 +1,46 @@
-import { onMount, createEffect, type Component } from "solid-js";
+import { onMount, onCleanup, createEffect, type Component } from "solid-js";
 
 type Props = {
-  values: number[];    // latest N samples, 0–max
-  max?: number;        // y-axis max (default: auto)
-  width?: number;
+  values: number[];
+  max?: number;
   height?: number;
   fill?: boolean;
 };
 
 export const Sparkline: Component<Props> = (props) => {
+  let wrap: HTMLDivElement | undefined;
   let canvas: HTMLCanvasElement | undefined;
-  const width  = () => props.width  ?? 300;
-  const height = () => props.height ?? 60;
+  let cssW = 0;
+  let cssH = 0;
 
-  let sized = false;
+  const resize = (): void => {
+    if (!wrap || !canvas) return;
+    const w = Math.floor(wrap.clientWidth);
+    const h = props.height ?? 60;
+    if (w === cssW && h === cssH) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width  = `${w}px`;
+    canvas.style.height = `${h}px`;
+    const ctx = canvas.getContext("2d");
+    if (ctx) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr); }
+    cssW = w;
+    cssH = h;
+  };
 
   const draw = (): void => {
-    if (!canvas) return;
+    if (!canvas || cssW === 0) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const w = width(), h = height();
-    if (!sized) {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      ctx.scale(dpr, dpr);
-      sized = true;
-    }
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, cssW, cssH);
 
     const values = props.values;
     if (values.length < 2) return;
 
     const max = props.max ?? Math.max(...values, 1);
-    const min = 0;
-    const range = Math.max(max - min, 1);
-    const stepX = w / (values.length - 1);
+    const range = Math.max(max, 1);
+    const stepX = cssW / (values.length - 1);
 
     const root = getComputedStyle(document.documentElement);
     const accent = root.getPropertyValue("--accent").trim() || "#7DAAFF";
@@ -49,22 +52,33 @@ export const Sparkline: Component<Props> = (props) => {
     ctx.beginPath();
     values.forEach((v, i) => {
       const x = i * stepX;
-      const y = h - ((v - min) / range) * h;
+      const y = cssH - (v / range) * cssH;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
     if (props.fill ?? true) {
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
+      ctx.lineTo(cssW, cssH);
+      ctx.lineTo(0, cssH);
       ctx.closePath();
       ctx.fillStyle = glow;
       ctx.fill();
     }
   };
 
-  onMount(draw);
-  createEffect(draw);
+  let ro: ResizeObserver | undefined;
+  onMount(() => {
+    resize();
+    draw();
+    ro = new ResizeObserver(() => { resize(); draw(); });
+    if (wrap) ro.observe(wrap);
+  });
+  onCleanup(() => ro?.disconnect());
+  createEffect(() => { void props.values; draw(); });
 
-  return <canvas ref={canvas} />;
+  return (
+    <div ref={wrap} style={{ width: "100%", height: `${props.height ?? 60}px` }}>
+      <canvas ref={canvas} />
+    </div>
+  );
 };

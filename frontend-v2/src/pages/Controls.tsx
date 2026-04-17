@@ -72,6 +72,8 @@ export const Controls: Component = () => {
   const [brightness, setBrightness] = createSignal<number>(80);
   const [power, setPower]         = createSignal<string>("balanced");
   const [wallpapers, setWallpapers] = createSignal<Wallpaper[]>([]);
+  const [activeWallpaper, setActiveWallpaper] = createSignal<string | null>(null);
+  const [applyingWallpaper, setApplyingWallpaper] = createSignal<string | null>(null);
 
   let brightnessTimer: number | undefined;
 
@@ -115,8 +117,14 @@ export const Controls: Component = () => {
     void apiPost("/api/power", { profile });
   };
 
-  const applyWallpaper = (name: string): void => {
-    void apiPost("/api/wallpaper", { name });
+  const applyWallpaper = async (name: string): Promise<void> => {
+    setApplyingWallpaper(name);
+    try {
+      await apiPost("/api/wallpaper", { name });
+      setActiveWallpaper(name);
+    } finally {
+      setApplyingWallpaper(null);
+    }
   };
 
   const enterDesktopMode = (): void => {
@@ -235,19 +243,47 @@ export const Controls: Component = () => {
           }}
         >
           <For each={wallpapers()}>
-            {(name) => (
-              <div
-                onClick={() => applyWallpaper(name)}
-                style={{
-                  "aspect-ratio": "9 / 16",
-                  "background-image": `url(/wallpapers/${name})`,
-                  "background-size": "cover",
-                  "background-position": "center",
-                  "border-radius": "var(--radius-sm)",
-                  border: "1px solid var(--border)",
-                }}
-              />
-            )}
+            {(name) => {
+              const isActive = () => activeWallpaper() === name;
+              const isApplying = () => applyingWallpaper() === name;
+              return (
+                <div
+                  onClick={() => void applyWallpaper(name)}
+                  style={{
+                    "aspect-ratio": "9 / 16",
+                    "background-image": `url(/wallpapers/${name})`,
+                    "background-size": "cover",
+                    "background-position": "center",
+                    "border-radius": "var(--radius-sm)",
+                    border: isActive() ? "3px solid var(--accent)" : "1px solid var(--border)",
+                    "box-shadow": isActive() ? "0 0 0 6px var(--accent-glow)" : "none",
+                    position: "relative",
+                    transition: "border-color 0.15s, box-shadow 0.15s, transform 0.15s",
+                    transform: isApplying() ? "scale(0.96)" : "scale(1)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <Show when={isActive()}>
+                    <div style={{
+                      position: "absolute", top: "8px", right: "8px",
+                      width: "32px", height: "32px", "border-radius": "50%",
+                      background: "var(--accent)", color: "var(--bg)",
+                      display: "flex", "align-items": "center", "justify-content": "center",
+                      "font-weight": "700", "font-size": "18px",
+                    }}>✓</div>
+                  </Show>
+                  <Show when={isApplying()}>
+                    <div style={{
+                      position: "absolute", inset: "0",
+                      background: "rgba(0,0,0,0.35)",
+                      display: "flex", "align-items": "center", "justify-content": "center",
+                      "border-radius": "var(--radius-sm)",
+                      color: "var(--text)", "font-size": "14px", "font-weight": "600",
+                    }}>…</div>
+                  </Show>
+                </div>
+              );
+            }}
           </For>
         </div>
       </Card>

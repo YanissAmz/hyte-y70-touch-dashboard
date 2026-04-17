@@ -10,6 +10,7 @@ import { Controls } from "~/pages/Controls";
 import { Settings } from "~/pages/Settings";
 import { Network } from "~/pages/Network";
 import { Processes } from "~/pages/Processes";
+import { Disk } from "~/pages/Disk";
 import { Sysinfo } from "~/pages/Sysinfo";
 import { Launcher } from "~/pages/Launcher";
 import { GameCenter } from "~/pages/GameCenter";
@@ -31,6 +32,7 @@ const Dashboard: Component = () => (
     <Page id="games"><GameCenter /></Page>
     <Page id="network"><Network /></Page>
     <Page id="processes"><Processes /></Page>
+    <Page id="disk"><Disk /></Page>
     <Page id="sysinfo"><Sysinfo /></Page>
     <Page id="controls"><Controls /></Page>
     <Page id="settings"><Settings /></Page>
