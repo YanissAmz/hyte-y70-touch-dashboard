@@ -8,11 +8,6 @@
  * Tokens are consumed through Tailwind arbitrary values and direct CSS.
  */
 
-/* Static theme palettes live in their own cascade layer. Unlayered
-   rules (the ambilight overrides below) always win over layered rules
-   regardless of specificity — so adding a new theme in this layer will
-   never accidentally beat the ambi tokens. */
-@layer theme {
 :root,
 [data-theme="a"] {
   /* Palette — minimalist dark, neutral blue accent */
@@ -70,9 +65,12 @@
    - --ambi-soft   : 55% white + 45% ambi, for medium-weight text that
      should read as "tinted" without looking low-contrast.
    - --ambi-glow   : ambi at 0.28 alpha, for text-shadow halos. */
-/* Unlayered — always wins over the @layer theme block above,
-   regardless of selector specificity. Adding a new theme in the
-   theme layer will never shadow these tokens. */
+/* html[data-theme] selectors (spec 0,1,1) beat the theme layer's
+   [data-theme="x"] (0,1,0). Enumerated rather than wildcard so the
+   cascade rule is explicit — any new theme must be added here. */
+html[data-theme="a"],
+html[data-theme="b"],
+html[data-theme="c"],
 :root {
   --ambi-accent: rgb(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255));
   --ambi-hero: color-mix(in srgb,
@@ -175,4 +173,3 @@
   --shadow-soft: 0 4px 32px rgba(255, 0, 255, 0.18),
                  0 0 1px rgba(0, 255, 255, 0.35);
 }
-} /* end @layer theme */
