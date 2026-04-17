@@ -52,7 +52,7 @@ export const Main: Component = () => {
     <div style={{ width: "100%", height: "100vh", display: "flex", "flex-direction": "column", padding: "36px", gap: "24px", "box-sizing": "border-box" }}>
       {/* HEADER — clock + date + weather */}
       <header style={{ "flex-shrink": "0", display: "flex", "flex-direction": "column", "justify-content": "center", "text-align": "center", padding: "20px 0" }}>
-        <div class="ui-title" style={{ "font-size": "220px", "font-weight": "700", "line-height": "1", "letter-spacing": "-8px", color: "var(--accent)", "text-shadow": "0 0 100px var(--accent-glow)" }}>
+        <div class="ui-title" style={{ "font-size": "220px", "font-weight": "700", "line-height": "1", "letter-spacing": "-8px", color: "var(--ambi-hero)", "text-shadow": "0 0 100px var(--ambi-glow)" }}>
           {clock()}
         </div>
         <div class="ui-muted" style={{ "font-size": "54px", "font-weight": "300", "margin-top": "24px", "text-transform": "capitalize" }}>
@@ -129,11 +129,11 @@ export const Main: Component = () => {
             <div class="ui-dim" style={{ "font-size": "24px" }}>{fmt(disk()?.nvme_temp_c)}°C</div>
           </div>
           <div style={{ "text-align": "center" }}>
-            <div style={{ "font-size": "140px", "font-weight": "700", "line-height": "1" }}>{fmt(disk()?.usage_percent)}<span style={{ "font-size": "56px" }}>%</span></div>
+            <div style={{ "font-size": "140px", "font-weight": "700", "line-height": "1", color: "var(--ambi-hero)", "text-shadow": "0 0 60px var(--ambi-glow)" }}>{fmt(disk()?.usage_percent)}<span style={{ "font-size": "56px" }}>%</span></div>
           </div>
           <div>
             <div style={{ height: "18px", background: "var(--bg-elev-2)", "border-radius": "9px", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${Math.min(100, disk()?.usage_percent ?? 0)}%`, background: "var(--accent)" }} />
+              <div style={{ height: "100%", width: `${Math.min(100, disk()?.usage_percent ?? 0)}%`, background: "var(--ambi-accent)" }} />
             </div>
             <div class="ui-muted" style={{ "font-size": "28px", "margin-top": "12px", "text-align": "center" }}>
               {fmt(disk()?.used_gb)} / {fmt(disk()?.total_gb)} GB
@@ -147,7 +147,7 @@ export const Main: Component = () => {
             <div class="ui-dim" style={{ "font-size": "24px" }}>{fmt(network()?.ping_ms)} ms</div>
           </div>
           <div style={{ "text-align": "center" }}>
-            <div style={{ "font-size": "100px", "font-weight": "700", "line-height": "1" }}>
+            <div style={{ "font-size": "100px", "font-weight": "700", "line-height": "1", color: "var(--ambi-hero)", "text-shadow": "0 0 50px var(--ambi-glow)" }}>
               {network()?.link_speed_mbps
                 ? (network()!.link_speed_mbps! >= 1000 ? `${(network()!.link_speed_mbps! / 1000).toFixed(0)}` : `${network()!.link_speed_mbps}`)
                 : "—"}

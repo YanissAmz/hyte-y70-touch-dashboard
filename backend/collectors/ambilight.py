@@ -77,16 +77,24 @@ async def run(broadcast, interval: float = 0.5) -> None:
     stale_task = asyncio.create_task(_stale_watcher(broadcast, state))
 
     try:
-        # Watch the directory rather than the file — watchfiles raises if
-        # the path doesn't exist yet, and /tmp/ambilight-color can be
-        # missing between TV off and the first write.
-        async for _changes in awatch(
-            str(COLOR_FILE.parent),
-            watch_filter=lambda change, path: Path(path) == COLOR_FILE,
-            step=20,      # inotify debounce window in ms — 20ms keeps us TV-tight
-            yield_on_timeout=False,
-        ):
-            await emit()
+        # Watch the file directly. We can't watch /tmp/ as a parent because
+        # watchfiles (RustNotify) recurses and blows up on unreadable
+        # systemd-private-*/ subdirs. If the file is momentarily missing
+        # (TV off → on boundary, external writer recreates it) the async
+        # iterator ends; we existence-poll at 1Hz and re-arm.
+        while True:
+            if not COLOR_FILE.exists():
+                await asyncio.sleep(1.0)
+                continue
+            try:
+                async for _changes in awatch(
+                    str(COLOR_FILE),
+                    step=20,      # inotify debounce window in ms — 20ms keeps us TV-tight
+                    yield_on_timeout=False,
+                ):
+                    await emit()
+            except (FileNotFoundError, PermissionError):
+                await asyncio.sleep(1.0)
     finally:
         stale_task.cancel()
 

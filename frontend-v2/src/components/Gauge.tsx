@@ -1,4 +1,5 @@
 import { onMount, onCleanup, createEffect, type Component } from "solid-js";
+import { wsSignals } from "~/stores/ws";
 
 type Props = {
   value: number;       // 0–100
@@ -42,7 +43,12 @@ export const Gauge: Component<Props> = (props) => {
     const sweepEnd = start + (end - start) * pct;
 
     const root = getComputedStyle(document.documentElement);
-    const accent = root.getPropertyValue("--accent").trim() || "#7DAAFF";
+    const ambi = wsSignals.ambilight.value();
+    // Arc colour follows live ambilight; text stays neutral so numbers
+    // remain readable regardless of TV content.
+    const accent = ambi
+      ? `rgb(${ambi.r}, ${ambi.g}, ${ambi.b})`
+      : root.getPropertyValue("--accent").trim() || "#7DAAFF";
     const dim    = root.getPropertyValue("--text-dim").trim() || "#5B6370";
     const text   = root.getPropertyValue("--text").trim() || "#E6EDF3";
     const muted  = root.getPropertyValue("--text-muted").trim() || "#8B949E";
@@ -82,7 +88,11 @@ export const Gauge: Component<Props> = (props) => {
     if (wrap) ro.observe(wrap);
   });
   onCleanup(() => ro?.disconnect());
-  createEffect(draw);
+  createEffect(() => {
+    void props.value;
+    void wsSignals.ambilight.value();
+    draw();
+  });
 
   return (
     <div ref={wrap} style={{ width: "100%", display: "flex", "justify-content": "center" }}>
