@@ -1,6 +1,7 @@
 import { createSignal, createMemo, For, Show, type Component } from "solid-js";
 import { wsSignals } from "~/stores/ws";
 import { Sparkline } from "~/components/Sparkline";
+import { usePageActivity } from "~/components/PageTrack";
 
 const fmt = (n: number | null | undefined, digits = 0): string =>
   n == null || Number.isNaN(n) ? "—" : n.toFixed(digits);
@@ -15,6 +16,7 @@ function uptimeStr(s: number): string {
 }
 
 export const Sysinfo: Component = () => {
+  const { active } = usePageActivity();
   const system = wsSignals.system.value;
   const disk   = wsSignals.disk.value;
   const cpu    = wsSignals.cpu.value;
@@ -33,6 +35,7 @@ export const Sysinfo: Component = () => {
   let lastDiskTs: number | null = null;
 
   const track = createMemo(() => {
+    if (!active()) return;
     const c = wsSignals.cpu.lastTs();
     const g = wsSignals.gpu.lastTs();
     const d = wsSignals.disk.lastTs();
@@ -139,21 +142,21 @@ export const Sysinfo: Component = () => {
             <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>CPU</div>
             <div style={{ "font-size": "38px", "font-weight": "700" }}>{fmt(cpu()?.temp_c)}°C</div>
             <div style={{ flex: "1 1 0", "min-height": 0 }}>
-              <Sparkline values={cpuTempHist()} max={100} height={160} />
+              <Sparkline values={cpuTempHist()} max={100} height={160} active={active()} />
             </div>
           </div>
           <div style={{ display: "flex", "flex-direction": "column", gap: "6px" }}>
             <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>GPU</div>
             <div style={{ "font-size": "38px", "font-weight": "700" }}>{fmt(gpu()?.temp_c)}°C</div>
             <div style={{ flex: "1 1 0", "min-height": 0 }}>
-              <Sparkline values={gpuTempHist()} max={100} height={160} />
+              <Sparkline values={gpuTempHist()} max={100} height={160} active={active()} />
             </div>
           </div>
           <div style={{ display: "flex", "flex-direction": "column", gap: "6px" }}>
             <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>NVMe</div>
             <div style={{ "font-size": "38px", "font-weight": "700" }}>{fmt(disk()?.nvme_temp_c)}°C</div>
             <div style={{ flex: "1 1 0", "min-height": 0 }}>
-              <Sparkline values={diskTempHist()} max={100} height={160} />
+              <Sparkline values={diskTempHist()} max={100} height={160} active={active()} />
             </div>
           </div>
         </div>
@@ -167,14 +170,14 @@ export const Sysinfo: Component = () => {
             <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>Read</div>
             <div style={{ "font-size": "38px", "font-weight": "700", color: "var(--success)" }}>{fmt((disk()?.io_read_bps ?? 0) / 1e6, 1)} MB/s</div>
             <div style={{ flex: "1 1 0", "min-height": 0 }}>
-              <Sparkline values={ioReadHist()} height={160} />
+              <Sparkline values={ioReadHist()} height={160} active={active()} />
             </div>
           </div>
           <div style={{ display: "flex", "flex-direction": "column", gap: "6px" }}>
             <div class="ui-dim" style={{ "font-size": "20px", "text-transform": "uppercase", "letter-spacing": "2px" }}>Write</div>
             <div style={{ "font-size": "38px", "font-weight": "700", color: "var(--warn)" }}>{fmt((disk()?.io_write_bps ?? 0) / 1e6, 1)} MB/s</div>
             <div style={{ flex: "1 1 0", "min-height": 0 }}>
-              <Sparkline values={ioWriteHist()} height={160} />
+              <Sparkline values={ioWriteHist()} height={160} active={active()} />
             </div>
           </div>
         </div>

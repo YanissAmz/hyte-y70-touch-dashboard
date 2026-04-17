@@ -27,16 +27,16 @@ function readHash(): Route {
 
 const Dashboard: Component = () => (
   <PageTrack>
-    <Page id="main"><Main /></Page>
-    <Page id="games"><GameCenter /></Page>
-    <Page id="network"><Network /></Page>
-    <Page id="processes"><Processes /></Page>
-    <Page id="disk"><Disk /></Page>
-    <Page id="sysinfo"><Sysinfo /></Page>
-    <Page id="controls"><Controls /></Page>
-    <Page id="settings"><Settings /></Page>
-    <Page id="launcher"><Launcher /></Page>
-    <Page id="ambient"><Ambient /></Page>
+    <Page id="main" index={0}><Main /></Page>
+    <Page id="games" index={1}><GameCenter /></Page>
+    <Page id="network" index={2}><Network /></Page>
+    <Page id="processes" index={3}><Processes /></Page>
+    <Page id="disk" index={4}><Disk /></Page>
+    <Page id="sysinfo" index={5}><Sysinfo /></Page>
+    <Page id="controls" index={6}><Controls /></Page>
+    <Page id="settings" index={7}><Settings /></Page>
+    <Page id="launcher" index={8}><Launcher /></Page>
+    <Page id="ambient" index={9}><Ambient /></Page>
   </PageTrack>
 );
 

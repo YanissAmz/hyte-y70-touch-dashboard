@@ -4,11 +4,13 @@ import { apiPost } from "~/lib/api";
 import { Button } from "~/components/Button";
 import { Sparkline } from "~/components/Sparkline";
 import { Modal } from "~/components/Modal";
+import { usePageActivity } from "~/components/PageTrack";
 
 const fmt = (n: number | null | undefined, digits = 0): string =>
   n == null || Number.isNaN(n) ? "—" : n.toFixed(digits);
 
 export const Network: Component = () => {
+  const { active } = usePageActivity();
   const net  = wsSignals.network.value;
   const scan = wsSignals.wifi_scan.value;
 
@@ -20,6 +22,7 @@ export const Network: Component = () => {
 
   let lastTs: number | null = null;
   const track = createMemo(() => {
+    if (!active()) return;
     const ts = wsSignals.network.lastTs();
     const d = net();
     if (!d || !ts || ts === lastTs) return;
@@ -123,7 +126,7 @@ export const Network: Component = () => {
           </div>
         </div>
         <div style={{ flex: "1 1 0", "min-height": 0 }}>
-          <Sparkline values={pingHist()} max={100} height={200} />
+          <Sparkline values={pingHist()} max={100} height={200} active={active()} />
         </div>
       </div>
 
@@ -135,7 +138,7 @@ export const Network: Component = () => {
             {fmt((net()?.download_bps ?? 0) / 1e6, 1)}<span class="ui-muted" style={{ "font-size": "28px", "margin-left": "8px" }}>Mb/s</span>
           </div>
           <div style={{ flex: "1 1 0", "min-height": 0 }}>
-            <Sparkline values={dlHist()} height={160} />
+            <Sparkline values={dlHist()} height={160} active={active()} />
           </div>
         </div>
         <div style={{ ...card, display: "flex", "flex-direction": "column", gap: "8px" }}>
@@ -144,7 +147,7 @@ export const Network: Component = () => {
             {fmt((net()?.upload_bps ?? 0) / 1e6, 1)}<span class="ui-muted" style={{ "font-size": "28px", "margin-left": "8px" }}>Mb/s</span>
           </div>
           <div style={{ flex: "1 1 0", "min-height": 0 }}>
-            <Sparkline values={ulHist()} height={160} />
+            <Sparkline values={ulHist()} height={160} active={active()} />
           </div>
         </div>
       </div>

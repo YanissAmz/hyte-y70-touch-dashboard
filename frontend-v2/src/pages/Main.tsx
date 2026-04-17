@@ -1,7 +1,8 @@
-import { createMemo, createSignal, onCleanup, Show, type Component } from "solid-js";
+import { createEffect, createMemo, createSignal, onCleanup, Show, type Component } from "solid-js";
 import { wsSignals } from "~/stores/ws";
 import { setPageIndex } from "~/stores/nav";
 import { Gauge } from "~/components/Gauge";
+import { usePageActivity } from "~/components/PageTrack";
 
 // Page indices — kept in sync with App.tsx Dashboard route order.
 const PAGE = { main: 0, games: 1, network: 2, processes: 3, disk: 4, sysinfo: 5 };
@@ -19,6 +20,7 @@ function uptimeStr(s: number): string {
 }
 
 export const Main: Component = () => {
+  const { active } = usePageActivity();
   const cpu     = wsSignals.cpu.value;
   const memory  = wsSignals.memory.value;
   const gpu     = wsSignals.gpu.value;
@@ -28,8 +30,11 @@ export const Main: Component = () => {
   const system  = wsSignals.system.value;
 
   const [tick, setTick] = createSignal(0);
-  const timer = window.setInterval(() => setTick((n) => n + 1), 30_000);
-  onCleanup(() => window.clearInterval(timer));
+  createEffect(() => {
+    if (!active()) return;
+    const timer = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    onCleanup(() => window.clearInterval(timer));
+  });
 
   const clock = createMemo(() => {
     tick();
@@ -80,7 +85,7 @@ export const Main: Component = () => {
             <div class="ui-title" style={{ "font-size": "52px", color: "var(--accent)" }}>CPU</div>
             <div class="ui-dim" style={{ "font-size": "24px" }}>{system()?.cpu_model?.split(" ").slice(0, 3).join(" ") ?? ""}</div>
           </div>
-          <Gauge value={cpu()?.usage_percent ?? 0} unit="%" size={460} thickness={30} />
+          <Gauge value={cpu()?.usage_percent ?? 0} unit="%" size={460} thickness={30} active={active()} />
           <div style={{ "align-self": "stretch", display: "flex", "justify-content": "space-around", "font-size": "40px", "font-weight": "700" }}>
             <span>{fmt(cpu()?.temp_c)}°C</span>
             <span>{fmt(cpu()?.frequency_ghz, 2)} GHz</span>
@@ -91,7 +96,7 @@ export const Main: Component = () => {
             <div class="ui-title" style={{ "font-size": "52px", color: "var(--success)" }}>RAM</div>
             <div class="ui-dim" style={{ "font-size": "24px" }}>{system()?.ram_model ?? ""}</div>
           </div>
-          <Gauge value={memory()?.percent ?? 0} unit="%" size={460} thickness={30} />
+          <Gauge value={memory()?.percent ?? 0} unit="%" size={460} thickness={30} active={active()} />
           <div style={{ "font-size": "40px", "font-weight": "700" }}>
             {fmt(memory()?.used_gb, 1)} / {fmt(memory()?.total_gb, 1)} GB
           </div>
@@ -104,7 +109,7 @@ export const Main: Component = () => {
           <div class="ui-title" style={{ "font-size": "52px", color: "var(--warn)" }}>GPU</div>
           <div class="ui-dim" style={{ "font-size": "24px" }}>{system()?.gpu_model ?? ""}</div>
         </div>
-        <Gauge value={gpu()?.utilization_percent ?? 0} unit="%" size={720} thickness={44} />
+        <Gauge value={gpu()?.utilization_percent ?? 0} unit="%" size={720} thickness={44} active={active()} />
         <div style={{ "align-self": "stretch", display: "grid", "grid-template-columns": "1fr 1fr 1fr", gap: "20px", "text-align": "center" }}>
           <div>
             <div class="ui-dim" style={{ "font-size": "22px", "text-transform": "uppercase", "letter-spacing": "2px" }}>TEMP</div>

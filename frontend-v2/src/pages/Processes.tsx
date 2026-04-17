@@ -1,11 +1,13 @@
 import { createSignal, createMemo, For, type Component } from "solid-js";
 import { wsSignals } from "~/stores/ws";
 import { Sparkline } from "~/components/Sparkline";
+import { usePageActivity } from "~/components/PageTrack";
 
 const fmt = (n: number | null | undefined, digits = 0): string =>
   n == null || Number.isNaN(n) ? "—" : n.toFixed(digits);
 
 export const Processes: Component = () => {
+  const { active } = usePageActivity();
   const cpu  = wsSignals.cpu.value;
   const gpu  = wsSignals.gpu.value;
   const mem  = wsSignals.memory.value;
@@ -20,6 +22,7 @@ export const Processes: Component = () => {
   let lastMemTs: number | null = null;
 
   const track = createMemo(() => {
+    if (!active()) return;
     const t1 = wsSignals.cpu.lastTs();
     const t2 = wsSignals.gpu.lastTs();
     const t3 = wsSignals.memory.lastTs();
@@ -120,21 +123,21 @@ export const Processes: Component = () => {
           <div class="ui-title" style={{ "font-size": "32px", color: "var(--accent)" }}>CPU</div>
           <div style={{ "font-size": "44px", "font-weight": "700" }}>{fmt(cpu()?.usage_percent)}%</div>
           <div style={{ flex: "1 1 0", "min-height": 0 }}>
-            <Sparkline values={cpuHist()} max={100} height={180} />
+            <Sparkline values={cpuHist()} max={100} height={180} active={active()} />
           </div>
         </div>
         <div style={{ ...card, display: "flex", "flex-direction": "column", gap: "6px" }}>
           <div class="ui-title" style={{ "font-size": "32px", color: "var(--warn)" }}>GPU</div>
           <div style={{ "font-size": "44px", "font-weight": "700" }}>{fmt(gpu()?.utilization_percent)}%</div>
           <div style={{ flex: "1 1 0", "min-height": 0 }}>
-            <Sparkline values={gpuHist()} max={100} height={180} />
+            <Sparkline values={gpuHist()} max={100} height={180} active={active()} />
           </div>
         </div>
         <div style={{ ...card, display: "flex", "flex-direction": "column", gap: "6px" }}>
           <div class="ui-title" style={{ "font-size": "32px", color: "var(--success)" }}>RAM</div>
           <div style={{ "font-size": "44px", "font-weight": "700" }}>{fmt(mem()?.percent)}%</div>
           <div style={{ flex: "1 1 0", "min-height": 0 }}>
-            <Sparkline values={memHist()} max={100} height={180} />
+            <Sparkline values={memHist()} max={100} height={180} active={active()} />
           </div>
         </div>
       </div>

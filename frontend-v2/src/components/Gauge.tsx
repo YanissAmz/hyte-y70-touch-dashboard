@@ -1,5 +1,4 @@
 import { onMount, onCleanup, createEffect, type Component } from "solid-js";
-import { wsSignals } from "~/stores/ws";
 
 type Props = {
   value: number;       // 0–100
@@ -7,6 +6,7 @@ type Props = {
   unit?: string;
   size?: number;       // max CSS side; auto-shrinks to parent width
   thickness?: number;
+  active?: boolean;
 };
 
 export const Gauge: Component<Props> = (props) => {
@@ -43,12 +43,10 @@ export const Gauge: Component<Props> = (props) => {
     const sweepEnd = start + (end - start) * pct;
 
     const root = getComputedStyle(document.documentElement);
-    const ambi = wsSignals.ambilight.value();
-    // Arc colour follows live ambilight; text stays neutral so numbers
-    // remain readable regardless of TV content.
-    const accent = ambi
-      ? `rgb(${ambi.r}, ${ambi.g}, ${ambi.b})`
-      : root.getPropertyValue("--accent").trim() || "#7DAAFF";
+    // Use the current CSS accent, but do not subscribe the canvas redraw loop
+    // to live ambilight updates. The page chrome can still follow ambilight
+    // via CSS vars without forcing large canvas repaints every tick.
+    const accent = root.getPropertyValue("--accent").trim() || "#7DAAFF";
     const dim    = root.getPropertyValue("--text-dim").trim() || "#5B6370";
     const text   = root.getPropertyValue("--text").trim() || "#E6EDF3";
     const muted  = root.getPropertyValue("--text-muted").trim() || "#8B949E";
@@ -89,8 +87,8 @@ export const Gauge: Component<Props> = (props) => {
   });
   onCleanup(() => ro?.disconnect());
   createEffect(() => {
+    if (props.active === false) return;
     void props.value;
-    void wsSignals.ambilight.value();
     draw();
   });
 

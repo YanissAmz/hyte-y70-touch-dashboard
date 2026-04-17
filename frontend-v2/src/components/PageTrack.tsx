@@ -1,4 +1,14 @@
-import { createSignal, onMount, onCleanup, type JSX, type Component } from "solid-js";
+import {
+  createContext,
+  createMemo,
+  createSignal,
+  onMount,
+  onCleanup,
+  useContext,
+  type Accessor,
+  type JSX,
+  type Component,
+} from "solid-js";
 import { pageIndex, setPageIndex, setPageCount } from "~/stores/nav";
 
 type Props = {
@@ -179,22 +189,46 @@ export const PageTrack: Component<Props> = (props) => {
   );
 };
 
+type PageActivity = {
+  active: Accessor<boolean>;
+  mounted: Accessor<boolean>;
+};
+
+const PageActivityContext = createContext<PageActivity>();
+
+export function usePageActivity(): PageActivity {
+  return useContext(PageActivityContext) ?? {
+    active: () => true,
+    mounted: () => true,
+  };
+}
+
 type PageProps = {
   children: JSX.Element;
   id?: string;
+  index: number;
 };
 
-export const Page: Component<PageProps> = (props) => (
-  <section
-    id={props.id}
-    class="page"
-    style={{
-      flex: "0 0 100vw",
-      height: "100vh",
-      "overflow-y": "auto",
-      "overflow-x": "hidden",
-    }}
-  >
-    {props.children}
-  </section>
-);
+export const Page: Component<PageProps> = (props) => {
+  const active = createMemo(() => pageIndex() === props.index);
+  const mounted = createMemo(() => active());
+
+  return (
+    <section
+      id={props.id}
+      class="page"
+      style={{
+        flex: "0 0 100vw",
+        height: "100vh",
+        "overflow-y": active() ? "auto" : "hidden",
+        "overflow-x": "hidden",
+      }}
+    >
+      {mounted() ? (
+        <PageActivityContext.Provider value={{ active, mounted }}>
+          {props.children}
+        </PageActivityContext.Provider>
+      ) : null}
+    </section>
+  );
+};
