@@ -8,3 +8,4 @@ __pycache__/
 *.pyc
 .chromium-data/
 wallpapers/current.png
+backups/

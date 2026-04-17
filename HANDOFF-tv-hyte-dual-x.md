@@ -1,6 +1,6 @@
 # Handoff — TV ↔ HYTE dual-X coexistence (NVIDIA + amdgpu)
 
-Owner handing off: Claude (Opus 4.7) · Date: 2026-04-17 · Status: **BLOQUÉ**
+Owner handing off: Claude (Opus 4.7) + Codex · Date: 2026-04-17 · Status: **RÉSOLU**
 
 ---
 
@@ -31,17 +31,50 @@ Vérifier : `ls -la /dev/dri/by-path/`.
 
 ---
 
+## Résolution
+
+Le faux bug “NVIDIA casse quand `:1` démarre” venait bien d’un **vol de VT actif**, mais le premier correctif (`chvt` de retour vers GDM) n’était qu’une demi-solution :
+- il réparait la TV
+- mais il **suspendait aussi les clients GTK/WebKit de `:1`**
+- résultat pratique : HYTE noir, même si `xrandr :1` montrait encore `DisplayPort-3`
+
+Correctif qui tient vraiment :
+1. garder `Xorg :1` isolé sur amdgpu avec `-configdir xorg-hyte.d`
+2. lancer `Xorg :1` avec **`-sharevts`**
+3. ne plus faire de `chvt` post-start
+4. arrêter le legacy `hyte-dashboard.service` qui relançait encore `webview.py` sur `DISPLAY=:0`
+
+État final appliqué :
+- `~/.config/systemd/user/hyte-xserver.service`
+  - `ExecStart=/usr/bin/Xorg :1 vt8 -sharevts -config xorg-hyte.conf -configdir xorg-hyte.d -nolisten tcp -noreset`
+  - plus de `restore-primary-vt.sh` en `ExecStartPost`
+- `hyte-dashboard.service` stoppé
+- `scripts/screen_on.sh` et `scripts/screen_off.sh` réalignés sur `hyte-xserver.service` + `hyte-webview.service`
+
+Validation faite :
+1. `systemctl --user restart hyte-xserver.service`
+   - `fgconsole` reste sur le VT GDM (`tty2` ici)
+   - `DISPLAY=:0 xrandr --output HDMI-0 --off && ... --auto` = OK
+   - `nvidia-smi display_active` = `Enabled`
+2. probe GTK sur `:1`
+   - `DISPLAY=:1 python3 ... import Gtk` = OK avec `-sharevts`
+   - avant `-sharevts`, l’import Gtk/Gdk gelait ou échouait
+3. `systemctl --user restart hyte-webview.service`
+   - `xwininfo -root -tree` sur `:1` montre maintenant une vraie fenêtre `HYTEDash`
+   - `WebKitNetworkProcess` + `WebKitWebProcess` présents
+4. le dashboard legacy sur la TV n’est plus piloté par `hyte-dashboard.service`
+
 ## État actuel
 
-**Les deux X servers fonctionnent individuellement mais pas simultanément de façon stable.**
+**Les deux X servers coexistent maintenant de façon stable sur la machine.**
 
-Pattern reproductible :
-1. `sudo systemctl restart gdm` (sans X :1) → **TV OK**, `nvidia-smi display_active=Enabled`, `DISPLAY=:0 xrandr` accepte les reconfigurations de CRTCs.
-2. `systemctl --user start hyte-xserver.service` (démarre X :1 sur amdgpu) → **TV signal perdu**, `nvidia-smi display_active=Disabled`, `DISPLAY=:0 xrandr --output HDMI-0 --off` répond `xrandr: Configure crtc 0 failed / BadMatch`.
-3. HYTE fonctionne correctement pendant que TV est perdue.
-4. Redémarrer gdm après X :1 → TV revient, HYTE s'éteint (ne se relance pas seul). Relancer hyte-xserver → HYTE revient, TV repart.
+Pattern validé :
+1. `sudo systemctl restart gdm` → **TV OK**
+2. `systemctl --user start hyte-xserver.service hyte-webview.service` → **HYTE OK** sans vol de VT visible
+3. `DISPLAY=:0 xrandr` continue à accepter les reconfigurations de CRTCs
+4. `DISPLAY=:1 xrandr` voit toujours `DisplayPort-3`
 
-**On est dans un "soit l'un, soit l'autre".**
+**On n’est plus dans un "soit l'un, soit l'autre".**
 
 ---
 
@@ -76,7 +109,7 @@ Section "Monitor" ... Section "Screen" ... Section "ServerLayout" ...
 
 Fichier : `/home/yaniss/.config/systemd/user/hyte-xserver.service`
 ```
-ExecStart=/usr/bin/Xorg :1 vt8 -config xorg-hyte.conf -configdir xorg-hyte.d -nolisten tcp -noreset
+ExecStart=/usr/bin/Xorg :1 vt8 -sharevts -config xorg-hyte.conf -configdir xorg-hyte.d -nolisten tcp -noreset
 ExecStartPost=... attend :1 prêt, puis lance configure-displays.sh (rotate portrait + map ILITEK touch)
 ```
 
@@ -121,9 +154,9 @@ Déjà en place, cf. point 1.
 
 ---
 
-## Le bug qui reste après TOUT ce qui précède
+## Le faux bug restant identifié pendant l'enquête
 
-**Même quand X :0 n'a aucun fd sur amdgpu (card2), démarrer X :1 casse la capacité de X :0 à reconfigurer ses CRTCs NVIDIA.**
+Même quand X :0 n'avait aucun fd sur amdgpu (card2), démarrer X :1 semblait casser la capacité de X :0 à reconfigurer ses CRTCs NVIDIA.
 
 Preuve reproductible :
 
@@ -142,25 +175,27 @@ nvidia-smi --query-gpu=display_active --format=csv,noheader  # → Enabled
 systemctl --user start hyte-xserver.service
 sleep 3
 
-# 4. X :0 est cassé
+# 4. Tant que vt8 reste actif, X :0 paraît "cassé"
 DISPLAY=:0 xrandr --output HDMI-0 --off   # → xrandr: Configure crtc 0 failed / BadMatch
 nvidia-smi --query-gpu=display_active --format=csv,noheader  # → Disabled
+
+# 5. Dès qu'on rend le VT à GDM, X :0 redevient sain
+sudo chvt 3   # ou 2 selon le VT GDM courant
+DISPLAY=:0 xrandr --output HDMI-0 --off   # → OK
+nvidia-smi --query-gpu=display_active --format=csv,noheader  # → Enabled
 ```
 
-**Hypothèse actuelle :** le pilote NVIDIA proprio réagit mal à un modeset `amdgpu` simultané sur le même système, même avec fds séparés et seat isolé. C'est probablement un bug interne du pilote NVIDIA (driver version `580.126.09`). À creuser du côté kernel : NVIDIA reçoit-il des events hotplug depuis la couche DRM globale quand amdgpu prend le master sur sa propre card ?
+**Hypothèse corrigée :** le symptôme venait d’abord de la gestion **mono-seat / VT actif**, pas d’un bug NVIDIA `580.126.09`.
 
-`sudo dmesg` pendant la transition ne montre **rien côté nvidia** — seulement des erreurs amdgpu DisplayPort LTTPR bénignes. Donc pas d'event kernel visible. Le couplage se fait dans le user-space nvidia-drv probablement.
+Le driver NVIDIA n’est pas entièrement blanchi pour tous les cas, mais il n’est plus nécessaire pour expliquer le pattern principal observé.
 
 ---
 
 ## Ce qu'on n'a PAS encore essayé
 
-1. **Downgrade du driver NVIDIA** (tester `535.x` ou `550.x` au lieu de `580.126.09`). Risqué mais possible via `ubuntu-drivers`.
-2. **`nvidia_drm modeset=0`** via `/etc/modprobe.d/` — abandonner KMS pour le pilote NVIDIA, revenir à un mode legacy où le pilote gère ses CRTCs entièrement en user-space. Peut isoler NVIDIA de la couche DRM commune. Module params actuels : `modeset=Y`, `fbdev=Y` (vérifier via `sudo cat /sys/module/nvidia_drm/parameters/modeset`).
-3. **PCI passthrough / vfio** pour donner amdgpu à une VM. Complexe, overkill.
-4. **Reproduire le bug dans un setup minimal** (deux Xorg cli sans GDM) pour confirmer que c'est pas GDM/gnome-shell qui fait la médiation du problème.
-5. **Bug report NVIDIA** — le forum dev NVIDIA a des threads sur "secondary GPU modeset breaks primary CRTC". Checker des workarounds connus.
-6. **Forcer PRIME sink explicitement** sur X :0 (`xrandr --setprovideroutputsource`) après démarrage de X :1 — mais les providers ne sont plus visibles via X :0 (amdgpu OutputClass Ignore).
+1. **Supprimer les cycles systemd user** autour de `graphical-session.target` (`PartOf=` sur `hyte-xserver` / `hyte-webview`) pour éviter les messages “ordering cycle” au stop/start.
+2. **Remplacer le `sudo -n chvt` par une primitive moins couplée à sudoers** si on veut durcir la solution (ex: helper root dédié).
+3. **Tester un reboot complet** comme validation finale longue durée, même si le scénario `restart gdm -> start hyte-*` est maintenant bon.
 
 ---
 
@@ -173,9 +208,10 @@ nvidia-smi --query-gpu=display_active --format=csv,noheader  # → Disabled
 | `/etc/X11/xorg.conf.d/10-nvidia-only.conf` | Force X :0 sur NVIDIA, amdgpu ignoré | cette session |
 | `/etc/udev/rules.d/99-hyte-amdgpu-no-seat.rules` | Retire seat de card2 | cette session |
 | `/etc/X11/Xwrapper.config` | `needs_root_rights=yes` | session antérieure |
-| `/home/yaniss/.config/systemd/user/hyte-xserver.service` | X :1 user service | modifié cette session (configdir ajouté) |
+| `/home/yaniss/.config/systemd/user/hyte-xserver.service` | X :1 user service | modifié cette session (configdir + sharevts) |
 | `/home/yaniss/.config/systemd/user/hyte-webview.service` | GTK WebKit viewer sur X :1 | session antérieure |
 | `/home/yaniss/.config/systemd/user/hyte-backend.service` | FastAPI dashboard | session antérieure |
+| `/home/yaniss/projects/dashboard/scripts/restore-primary-vt.sh` | helper de debug, plus utilisé par le service final | cette session |
 
 Backups de l'état avant cette session :
 - `/home/yaniss/projects/dashboard/backups/xorg.conf.d.20260417-120954/` — snapshot de /etc/X11/xorg.conf.d/ avant modifications

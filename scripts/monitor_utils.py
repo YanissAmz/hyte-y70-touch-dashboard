@@ -11,15 +11,16 @@ gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
 
-_HYTE_WIDTHS  = (550, 1100)
-_HYTE_HEIGHTS = (1920, 3840)
+_HYTE_WIDTHS  = (550, 1100, 3840)
+_HYTE_HEIGHTS = (1100, 1920, 3840)
 
 
 def find_hyte_monitor_index(screen=None) -> int:
     """Retourne l'index GTK du moniteur HYTE.
 
     Stratégie :
-      1. Match géométrique : panneau portrait 1100x3840 (ou 550x1920 en logical avec scale=2)
+      1. Match géométrique : panneau HYTE en portrait 1100x3840
+         (ou 550x1920 en logical avec scale=2), avec fallback paysage 3840x1100
       2. Fallback : connecteur nommé DisplayPort-0 (amdgpu) ou DP-0 (nvidia legacy)
       3. Dernier moniteur (safety)
     """

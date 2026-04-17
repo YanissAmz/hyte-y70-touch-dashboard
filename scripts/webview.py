@@ -27,7 +27,7 @@ from monitor_utils import get_hyte_geometry
 
 
 def find_hyte_xrandr_index():
-    """Parse xrandr --listmonitors pour trouver l'index du moniteur HYTE (1100x3840 portrait).
+    """Parse xrandr --listmonitors pour trouver l'index du moniteur HYTE.
 
     Détection par résolution (pas par nom de connecteur) pour supporter nvidia et amdgpu.
     Format xrandr: ' 1: +DisplayPort-0 1100/340x3840/100+3840+0  DisplayPort-0'
@@ -41,7 +41,7 @@ def find_hyte_xrandr_index():
             if len(parts) != 2 or not parts[0].strip().isdigit():
                 continue
             # Extract resolution from format like "1100/340x3840/100"
-            if re.search(r"\b1100/\d+x3840/\d+", parts[1]):
+            if re.search(r"\b(1100/\d+x3840/\d+|3840/\d+x1100/\d+)", parts[1]):
                 return int(parts[0].strip())
     except Exception:
         pass
@@ -95,6 +95,7 @@ class DashboardWindow(Gtk.Window):
         self._minimized = False
         self._float_proc = None
         self._inactivity_timer = None
+        self._recovering_webview = False
 
         # On GNOME's X :0 the WM mangles window coordinates under HiDPI (GNOME
         # scale=2 on primary HDMI causes move(3840,0) to land at x=7680).
@@ -127,21 +128,8 @@ class DashboardWindow(Gtk.Window):
             "script-message-received::dashboard", self._on_js_message
         )
 
-        # WebView
-        self.webview = WebKit2.WebView.new_with_user_content_manager(
-            self._content_mgr
-        )
-        wk = self.webview.get_settings()
-        wk.set_enable_javascript(True)
-        wk.set_enable_page_cache(False)
-        # Zoom adaptatif : le frontend est calibré pour une viewport CSS de 1100px.
-        # WebKit reçoit le logical width de GTK (= physique / scale). Donc zoom = 1/scale
-        # pour que la CSS viewport reste à 1100 quel que soit le scale GNOME (qui change
-        # quand une TV 4K est branchée en HDMI primary).
-        self._apply_adaptive_zoom()
-        self.webview.load_uri(DASHBOARD_URL)
-
-        self.add(self.webview)
+        self.webview = None
+        self._replace_webview(DASHBOARD_URL)
         try:
             import gi
             gi.require_version('Gdk', '3.0')
@@ -158,6 +146,49 @@ class DashboardWindow(Gtk.Window):
 
         # Polling signal file pour les commandes externes (float_button, API)
         GLib.timeout_add(1500, self._check_signal)
+
+    def _build_webview(self):
+        webview = WebKit2.WebView.new_with_user_content_manager(
+            self._content_mgr
+        )
+        wk = webview.get_settings()
+        wk.set_enable_javascript(True)
+        wk.set_enable_page_cache(False)
+        webview.connect("web-process-terminated", self._on_web_process_terminated)
+        return webview
+
+    def _replace_webview(self, uri: str):
+        old = self.webview
+        self.webview = self._build_webview()
+        if old is not None:
+            self.remove(old)
+            old.destroy()
+        self.add(self.webview)
+        # Zoom adaptatif : le frontend est calibré pour une viewport CSS de 1100px.
+        # WebKit reçoit le logical width de GTK (= physique / scale). Donc zoom = 1/scale
+        # pour que la CSS viewport reste à 1100 quel que soit le scale GNOME (qui change
+        # quand une TV 4K est branchée en HDMI primary).
+        self._apply_adaptive_zoom()
+        self.webview.show()
+        self.webview.load_uri(uri)
+
+    def _on_web_process_terminated(self, webview, reason):
+        if self._recovering_webview:
+            return
+        self._recovering_webview = True
+        current_uri = webview.get_uri() or DASHBOARD_URL
+        print(f"WebKit renderer terminated ({reason}); recreating WebView")
+
+        def _recover():
+            try:
+                self._replace_webview(current_uri)
+                if not self._minimized:
+                    self.go_fullscreen()
+            finally:
+                self._recovering_webview = False
+            return False
+
+        GLib.timeout_add(250, _recover)
 
     def _on_realize(self, _widget):
         """Bypass GNOME WM via override_redirect, then pin to HYTE geometry.
