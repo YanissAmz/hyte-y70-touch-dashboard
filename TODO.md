@@ -80,3 +80,13 @@
 - [ ] Retirer le debug overlay `dbg` définitivement si touch stable ✓ (déjà fait)
 - [ ] Feedback border glow au tap sur les cards
 - [ ] Graphes : axe Y avec labels valeurs
+
+## Ideas — post-ambilight (2026-04-17)
+
+- [ ] **Galerie wallpapers dans Controls** — scan `~/Wallpapers/`, vignettes, tap = apply + `bumpWallpaperVersion()`. Valorise les outpaintings à venir (Bakugo etc.). ~30min.
+- [ ] **Night mode auto** — après 23h, dim intensity ambi × 0.5, bump body alphas × 1.2. Confort visuel TV lumineuse le soir. ~15min.
+- [ ] **Toast notifications ambi-tintées** — notif WS (dbus déjà streamé) → toast prenant `--ambi-accent` + glow. Uniformise le look. ~45min.
+- [ ] **Cold reboot smoke test** — vérifier que HYTE se relance seul sur X :1 après reboot complet.
+- [ ] **MK8 launch test** — valider `hyte-game-hook.sh` stoppe les 3 services + resume clean après game close.
+- [ ] **ComfyUI outpainting Bakugo** — session collaborative Kontext 2-pass (1100×2100 puis 1100×3840), prompt storm/ruins/MHA style. GPU libre requis.
+- [ ] **Fine-tune ambi effects sur Bakugo** — une fois l'image retravaillée, ajuster vignette + glow + bandeaux pour isoler le perso.
