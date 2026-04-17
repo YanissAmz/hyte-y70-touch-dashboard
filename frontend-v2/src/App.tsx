@@ -1,8 +1,7 @@
 import { createSignal, Match, Switch, onMount, type Component } from "solid-js";
 import { startWs } from "~/stores/ws";
 import { startAmbilight } from "~/stores/ambilight";
-import { startIdle } from "~/stores/idle";
-import { goToLast, setPageIndex } from "~/stores/nav";
+import { setPageIndex } from "~/stores/nav";
 import { Debug } from "~/pages/Debug";
 import { Design } from "~/pages/Design";
 import { Main } from "~/pages/Main";
@@ -41,10 +40,6 @@ const Dashboard: Component = () => (
   </PageTrack>
 );
 
-function goToAmbient(): void {
-  goToLast();
-}
-
 export const App: Component = () => {
   const [route, setRoute] = createSignal<Route>(readHash());
 
@@ -61,8 +56,6 @@ export const App: Component = () => {
       };
       applyPageHash();
       window.addEventListener("hashchange", applyPageHash);
-
-      window.setTimeout(() => startIdle(goToAmbient, 120_000), 50);
     }
   });
 
