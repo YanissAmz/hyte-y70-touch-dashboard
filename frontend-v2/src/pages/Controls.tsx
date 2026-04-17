@@ -1,5 +1,6 @@
 import { createSignal, onMount, For, Show, type Component } from "solid-js";
 import { apiGet, apiPost } from "~/lib/api";
+import { bumpWallpaperVersion } from "~/stores/wallpaper";
 import { Button } from "~/components/Button";
 import { TileGrid } from "~/components/TileGrid";
 
@@ -121,6 +122,7 @@ export const Controls: Component = () => {
     try {
       await apiPost("/api/wallpaper", { name });
       setActiveWallpaper(name);
+      bumpWallpaperVersion();
     } finally {
       setApplyingWallpaper(null);
     }

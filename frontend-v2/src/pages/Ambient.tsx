@@ -1,24 +1,21 @@
-import { createSignal, createEffect, createMemo, Show, type Component } from "solid-js";
-import { pageIndex } from "~/stores/nav";
+import { createSignal, createEffect, type Component } from "solid-js";
+import { wallpaperVersion } from "~/stores/wallpaper";
 
 /**
  * Ambient wallpaper page. Single wallpaper (always /wallpapers/current.png
- * — user picks it from Controls), no rotation. Color overlays use CSS
- * mix-blend-mode which is expensive to composite; they only mount when the
- * ambient page is actually on-screen.
+ * — user picks it from Controls), no rotation. Three overlay layers:
+ * a dark vignette (multiply) + an ambilight-coloured halo (screen) + two
+ * subtle edge gradients. The halo and vignette are centred on the subject
+ * so the figure reads clean while the background is darkened and glowing.
  */
 export const Ambient: Component = () => {
-  const isAmbientPage = createMemo(() => {
-    const track = document.querySelector(".page-track");
-    if (!track) return false;
-    return pageIndex() === track.children.length - 1;
-  });
-
-  // Bust wallpaper cache every time user navigates to this page, so any
-  // Controls-driven change is picked up without a full reload.
+  // Bust the wallpaper cache when the user changes it from Controls.
+  // WebKit otherwise keeps the previous image in its in-memory cache even
+  // though the server sets no-store on /wallpapers/current.png.
   const [bust, setBust] = createSignal(Date.now());
   createEffect(() => {
-    if (isAmbientPage()) setBust(Date.now());
+    wallpaperVersion();
+    setBust(Date.now());
   });
 
   return (
@@ -44,46 +41,66 @@ export const Ambient: Component = () => {
         }}
       />
 
-      <Show when={isAmbientPage()}>
-        <div
-          style={{
-            position: "absolute",
-            inset: "0 0 55% 0",
-            background: `linear-gradient(to bottom,
-              rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.85),
-              rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.22) 55%,
-              rgba(0, 0, 0, 0) 100%)`,
-            "mix-blend-mode": "screen",
-            "pointer-events": "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: "55% 0 0 0",
-            background: `linear-gradient(to top,
-              rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.50),
-              rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.12) 45%,
-              rgba(0, 0, 0, 0) 100%)`,
-            "mix-blend-mode": "screen",
-            "pointer-events": "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: "0",
-            background: `radial-gradient(
-              ellipse 70% 55% at 50% 48%,
-              rgba(0, 0, 0, 0) 0%,
-              rgba(0, 0, 0, 0) 30%,
-              rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.35) 70%,
-              rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.75) 100%)`,
-            "mix-blend-mode": "screen",
-            "pointer-events": "none",
-          }}
-        />
-      </Show>
+      {/* 1. Vignette sombre — `multiply` fonce les bords, laisse le centre
+          (où se trouve le sujet, ici Bakugo) à sa luminosité naturelle.
+          Les couleurs du sujet ne changent pas. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: "0",
+          background: `radial-gradient(
+            ellipse 60% 48% at 50% 42%,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0) 40%,
+            rgba(0, 0, 0, 0.82) 85%,
+            rgba(0, 0, 0, 0.96) 100%)`,
+          "mix-blend-mode": "multiply",
+          "pointer-events": "none",
+        }}
+      />
+
+      {/* 2. Glow ambilight — `screen` allume les bords sombres avec la
+          couleur de l'ambilight TV. Le centre reste transparent donc
+          le sujet n'est pas teinté. L'anneau entre 45% et 90% fait le halo. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: "0",
+          background: `radial-gradient(
+            ellipse 70% 55% at 50% 42%,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0) 42%,
+            rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.55) 70%,
+            rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.85) 95%)`,
+          "mix-blend-mode": "screen",
+          "pointer-events": "none",
+        }}
+      />
+
+      {/* 3. Bandeau haut + bas — teinte subtile sur les extrémités pour
+          que l'ambilight ne s'arrête pas pile à la vignette. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: "0 0 80% 0",
+          background: `linear-gradient(to bottom,
+            rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.35),
+            rgba(0, 0, 0, 0) 100%)`,
+          "mix-blend-mode": "screen",
+          "pointer-events": "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: "80% 0 0 0",
+          background: `linear-gradient(to top,
+            rgba(var(--ambi-r), var(--ambi-g), var(--ambi-b), 0.30),
+            rgba(0, 0, 0, 0) 100%)`,
+          "mix-blend-mode": "screen",
+          "pointer-events": "none",
+        }}
+      />
     </div>
   );
 };
