@@ -79,19 +79,19 @@ html[data-theme="c"],
   --ambi-soft: color-mix(in srgb,
     rgb(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255)) 45%,
     white);
-  --ambi-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.35);
+  --ambi-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.48);
   /* Card halos — bumped a touch so the cards still feel "energised"
      even though the heavy full-page tint is kept under control. */
-  --ambi-halo: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.48);
+  --ambi-halo: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.62);
   /* Card borders — clearly visible liseré on dark bg. */
-  --ambi-border: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.64);
+  --ambi-border: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.74);
   /* Inner glow — reads as "lit from edges" inside each card without
      touching content. */
-  --ambi-inner: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.18);
-  --card-fill-top: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.21);
-  --card-fill-mid: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.10);
-  --card-fill-bottom: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.04);
-  --card-inner-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.14);
+  --ambi-inner: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.24);
+  --card-fill-top: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.28);
+  --card-fill-mid: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.14);
+  --card-fill-bottom: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.06);
+  --card-inner-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.20);
   --card-surface: linear-gradient(180deg,
       var(--card-fill-top) 0%,
       var(--card-fill-mid) 34%,
@@ -114,10 +114,10 @@ html[data-theme="c"],
   /* Lightweight live card halo. Keep it visibly ambilight-tinted but much
      cheaper than the old full-surface treatment. */
   --shadow-soft:   0 4px 20px rgba(0, 0, 0, 0.50),
-                   0 0 26px rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.28);
+                   0 0 38px rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.36);
   --card-shadow:   var(--shadow-soft),
                    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-                   inset 0 0 28px var(--card-inner-glow);
+                   inset 0 0 38px var(--card-inner-glow);
 }
 
 [data-theme="b"] {
