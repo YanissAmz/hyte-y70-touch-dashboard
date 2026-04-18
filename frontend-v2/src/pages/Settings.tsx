@@ -1,6 +1,11 @@
 import { createSignal, onMount, For, Show, type Component } from "solid-js";
 import { apiGet, apiPost } from "~/lib/api";
 import { theme, setTheme, type Theme } from "~/stores/theme";
+import {
+  ambilightProfile,
+  setAmbilightProfile,
+  type AmbilightProfile,
+} from "~/stores/ambilightProfile";
 import { wsSignals } from "~/stores/ws";
 import { Button } from "~/components/Button";
 
@@ -11,6 +16,16 @@ const THEMES: { id: Theme; label: string; desc: string }[] = [
   { id: "a", label: "A · Minimalist", desc: "Sky blue on near-black" },
   { id: "b", label: "B · Anime",      desc: "Warm explosion orange" },
   { id: "c", label: "C · Cyberpunk",  desc: "Neon magenta + cyan" },
+];
+
+const AMBILIGHT_PROFILES: {
+  id: AmbilightProfile;
+  label: string;
+  desc: string;
+}[] = [
+  { id: "soft", label: "Soft", desc: "Glow discret, ambiance légère" },
+  { id: "normal", label: "Normal", desc: "Profil équilibré pour le quotidien" },
+  { id: "punchy", label: "Punchy", desc: "Halo fort pour HYTE bien visible" },
 ];
 
 export const Settings: Component = () => {
@@ -113,6 +128,45 @@ export const Settings: Component = () => {
                   <div class="ui-muted" style={{ "font-size": "20px", "margin-top": "4px" }}>{t.desc}</div>
                 </div>
                 <Show when={theme() === t.id}>
+                  <span style={{ "font-size": "32px", color: "var(--accent)" }}>●</span>
+                </Show>
+              </div>
+            )}
+          </For>
+        </div>
+      </div>
+
+      {/* AMBILIGHT PROFILE */}
+      <div style={{ ...card, "flex-shrink": 0, display: "flex", "flex-direction": "column", gap: "14px" }}>
+        <div class="ui-title" style={{ "font-size": "40px" }}>Ambilight intensity</div>
+        <div style={{ display: "flex", "flex-direction": "column", gap: "10px" }}>
+          <For each={AMBILIGHT_PROFILES}>
+            {(profile) => (
+              <div
+                onClick={() => setAmbilightProfile(profile.id)}
+                style={{
+                  display: "flex",
+                  "align-items": "center",
+                  "justify-content": "space-between",
+                  padding: "18px 24px",
+                  background: "var(--bg-elev-2)",
+                  "border-radius": "18px",
+                  border:
+                    ambilightProfile() === profile.id
+                      ? "3px solid var(--accent)"
+                      : "1px solid transparent",
+                  cursor: "pointer",
+                }}
+              >
+                <div>
+                  <div style={{ "font-size": "28px", "font-weight": "700" }}>
+                    {profile.label}
+                  </div>
+                  <div class="ui-muted" style={{ "font-size": "20px", "margin-top": "4px" }}>
+                    {profile.desc}
+                  </div>
+                </div>
+                <Show when={ambilightProfile() === profile.id}>
                   <span style={{ "font-size": "32px", color: "var(--accent)" }}>●</span>
                 </Show>
               </div>

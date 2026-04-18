@@ -52,6 +52,61 @@
   --tap-primary: 72px;
 }
 
+:root,
+html[data-ambilight-profile="normal"] {
+  --ambi-room-top-alpha: 0.60;
+  --ambi-room-bottom-alpha: 0.48;
+  --ambi-halo-alpha: 0.62;
+  --ambi-border-alpha: 0.74;
+  --ambi-inner-alpha: 0.24;
+  --card-fill-top-alpha: 0.28;
+  --card-fill-mid-alpha: 0.14;
+  --card-fill-bottom-alpha: 0.06;
+  --card-inner-glow-alpha: 0.20;
+  --shadow-ambi-alpha: 0.36;
+  --ambient-ring-mid-alpha: 0.42;
+  --ambient-ring-outer-alpha: 0.78;
+  --ambient-ring-edge-alpha: 0.98;
+  --ambient-strip-top-alpha: 0.52;
+  --ambient-strip-bottom-alpha: 0.46;
+}
+
+html[data-ambilight-profile="soft"] {
+  --ambi-room-top-alpha: 0.34;
+  --ambi-room-bottom-alpha: 0.24;
+  --ambi-halo-alpha: 0.38;
+  --ambi-border-alpha: 0.48;
+  --ambi-inner-alpha: 0.14;
+  --card-fill-top-alpha: 0.16;
+  --card-fill-mid-alpha: 0.08;
+  --card-fill-bottom-alpha: 0.03;
+  --card-inner-glow-alpha: 0.12;
+  --shadow-ambi-alpha: 0.22;
+  --ambient-ring-mid-alpha: 0.24;
+  --ambient-ring-outer-alpha: 0.50;
+  --ambient-ring-edge-alpha: 0.70;
+  --ambient-strip-top-alpha: 0.28;
+  --ambient-strip-bottom-alpha: 0.24;
+}
+
+html[data-ambilight-profile="punchy"] {
+  --ambi-room-top-alpha: 0.82;
+  --ambi-room-bottom-alpha: 0.66;
+  --ambi-halo-alpha: 0.84;
+  --ambi-border-alpha: 0.94;
+  --ambi-inner-alpha: 0.34;
+  --card-fill-top-alpha: 0.40;
+  --card-fill-mid-alpha: 0.20;
+  --card-fill-bottom-alpha: 0.09;
+  --card-inner-glow-alpha: 0.28;
+  --shadow-ambi-alpha: 0.52;
+  --ambient-ring-mid-alpha: 0.58;
+  --ambient-ring-outer-alpha: 0.92;
+  --ambient-ring-edge-alpha: 1.00;
+  --ambient-strip-top-alpha: 0.72;
+  --ambient-strip-bottom-alpha: 0.64;
+}
+
 /* Ambilight-driven tokens — defined AFTER the theme blocks so they apply
    to every theme and override only the parts that are worth animating live.
    Keep the full-page surfaces mostly static, but let the cards themselves
@@ -82,16 +137,16 @@ html[data-theme="c"],
   --ambi-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.48);
   /* Card halos — bumped a touch so the cards still feel "energised"
      even though the heavy full-page tint is kept under control. */
-  --ambi-halo: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.62);
+  --ambi-halo: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--ambi-halo-alpha, 0.62));
   /* Card borders — clearly visible liseré on dark bg. */
-  --ambi-border: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.74);
+  --ambi-border: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--ambi-border-alpha, 0.74));
   /* Inner glow — reads as "lit from edges" inside each card without
      touching content. */
-  --ambi-inner: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.24);
-  --card-fill-top: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.28);
-  --card-fill-mid: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.14);
-  --card-fill-bottom: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.06);
-  --card-inner-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.20);
+  --ambi-inner: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--ambi-inner-alpha, 0.24));
+  --card-fill-top: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--card-fill-top-alpha, 0.28));
+  --card-fill-mid: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--card-fill-mid-alpha, 0.14));
+  --card-fill-bottom: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--card-fill-bottom-alpha, 0.06));
+  --card-inner-glow: rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--card-inner-glow-alpha, 0.20));
   --card-surface: linear-gradient(180deg,
       var(--card-fill-top) 0%,
       var(--card-fill-mid) 34%,
@@ -114,7 +169,7 @@ html[data-theme="c"],
   /* Lightweight live card halo. Keep it visibly ambilight-tinted but much
      cheaper than the old full-surface treatment. */
   --shadow-soft:   0 4px 20px rgba(0, 0, 0, 0.50),
-                   0 0 38px rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.36);
+                   0 0 38px rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--shadow-ambi-alpha, 0.36));
   --card-shadow:   var(--shadow-soft),
                    inset 0 1px 0 rgba(255, 255, 255, 0.04),
                    inset 0 0 38px var(--card-inner-glow);

@@ -31,10 +31,10 @@ html { background: var(--bg); }
 body {
   background:
     radial-gradient(ellipse 80% 55% at 50% 0%,
-      rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.60),
+      rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--ambi-room-top-alpha, 0.60)),
       transparent 70%),
     radial-gradient(ellipse 80% 55% at 50% 100%,
-      rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), 0.48),
+      rgba(var(--ambi-r, 125), var(--ambi-g, 170), var(--ambi-b, 255), var(--ambi-room-bottom-alpha, 0.48)),
       transparent 70%),
     var(--bg);
 }

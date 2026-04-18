@@ -2,6 +2,7 @@ import { createSignal, Match, Switch, onMount, type Component } from "solid-js";
 import { startWs } from "~/stores/ws";
 import { startAmbilight } from "~/stores/ambilight";
 import { setPageIndex } from "~/stores/nav";
+import "~/stores/ambilightProfile";
 import { Debug } from "~/pages/Debug";
 import { Design } from "~/pages/Design";
 import { Main } from "~/pages/Main";
