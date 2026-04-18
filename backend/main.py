@@ -50,6 +50,21 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/api/ambilight/profile")
+async def get_ambilight_profile():
+    from backend.controllers.ambilight_profile import get_profile
+
+    return {"profile": get_profile()}
+
+
+@app.post("/api/ambilight/profile")
+async def set_ambilight_profile(data: dict = Body(...)):
+    from backend.controllers.ambilight_profile import set_profile
+
+    profile = set_profile(data.get("profile", "normal"))
+    return {"status": "ok", "profile": profile}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
