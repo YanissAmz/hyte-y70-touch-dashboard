@@ -4,6 +4,16 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_V2_DIR = BASE_DIR / "frontend-v2" / "dist"
 WALLPAPERS_DIR = BASE_DIR / "wallpapers"
+INFRA_HOME_DIR = Path.home() / "projects" / "infra-home"
+AMBISYNC_CONFIG_PATH = INFRA_HOME_DIR / "ambisync_config" / "config.yml"
+AMBILIGHT_PROFILES_PATH = INFRA_HOME_DIR / "ha_config" / "ambilight_profiles.yaml"
+AMBILIGHT_RUNTIME_DIR = INFRA_HOME_DIR / "ha_config" / "runtime"
+AMBILIGHT_CONTROLLER_STATE_PATH = AMBILIGHT_RUNTIME_DIR / "ambilight_controller_state.json"
+AMBILIGHT_OVERRIDES_PATH = AMBILIGHT_RUNTIME_DIR / "overrides.json"
+AMBILIGHT_STATUS_DIR = INFRA_HOME_DIR / "ha_config" / "status"
+AMBILIGHT_COMMANDS_DIR = INFRA_HOME_DIR / "ha_config" / "commands"
+AMBILIGHT_FORCE_DAY_FLAG = INFRA_HOME_DIR / "ha_config" / ".force_day"
+AMBILIGHT_FORCE_NIGHT_FLAG = INFRA_HOME_DIR / "ha_config" / ".force_night"
 
 HOST = "127.0.0.1"
 PORT = 8070

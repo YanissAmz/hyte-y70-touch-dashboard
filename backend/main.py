@@ -31,6 +31,11 @@ async def _ensure_wallpaper():
 async def lifespan(app: FastAPI):
     await _ensure_wallpaper()
     scheduler.start()
+    try:
+        from backend.controllers.ambilight_control import get_status
+        get_status()
+    except Exception as e:
+        logging.warning(f"Ambilight control init failed: {e}")
     # Restaurer le dernier état LED sauvegardé
     try:
         from backend.controllers.leds import restore_state
@@ -52,17 +57,85 @@ async def health():
 
 @app.get("/api/ambilight/profile")
 async def get_ambilight_profile():
-    from backend.controllers.ambilight_profile import get_profile
+    from backend.controllers.ambilight_control import get_status
 
-    return {"profile": get_profile()}
+    status = get_status()
+    return {"profile": status["effective_hyte_profile"]}
 
 
 @app.post("/api/ambilight/profile")
 async def set_ambilight_profile(data: dict = Body(...)):
-    from backend.controllers.ambilight_profile import set_profile
+    from backend.controllers.ambilight_control import set_hyte
 
-    profile = set_profile(data.get("profile", "normal"))
-    return {"status": "ok", "profile": profile}
+    status = set_hyte("manual", data.get("profile", "normal"))
+    return {"status": "ok", "profile": status["effective_hyte_profile"]}
+
+
+@app.get("/api/ambilight/controller/status")
+async def get_ambilight_controller_status():
+    from backend.controllers.ambilight_control import get_status
+
+    return get_status()
+
+
+@app.post("/api/ambilight/controller/apply")
+async def apply_ambilight_controller_state(data: dict = Body(default={})):
+    from backend.controllers.ambilight_control import apply_current
+
+    return apply_current(reason=data.get("reason", "api"))
+
+
+@app.post("/api/ambilight/controller/bootstrap")
+async def bootstrap_ambilight_controller():
+    from backend.controllers.ambilight_control import bootstrap
+
+    return bootstrap()
+
+
+@app.post("/api/ambilight/controller/mode")
+async def set_ambilight_controller_mode(data: dict = Body(...)):
+    from backend.controllers.ambilight_control import set_mode
+
+    return set_mode(data.get("mode", "auto"))
+
+
+@app.post("/api/ambilight/controller/profile")
+async def set_ambilight_controller_profile(data: dict = Body(...)):
+    from backend.controllers.ambilight_control import set_profile
+
+    return set_profile(data.get("profile", "movie"))
+
+
+@app.post("/api/ambilight/controller/power")
+async def set_ambilight_controller_power(data: dict = Body(...)):
+    from backend.controllers.ambilight_control import set_power
+
+    return set_power(data.get("power", "on"))
+
+
+@app.post("/api/ambilight/controller/hyte")
+async def set_ambilight_controller_hyte(data: dict = Body(...)):
+    from backend.controllers.ambilight_control import set_hyte, sync_hyte_from_ha
+
+    if "auto_sync" in data:
+        return sync_hyte_from_ha(bool(data.get("auto_sync")), data.get("manual_profile", "punchy"))
+    return set_hyte(data.get("mode", "manual"), data.get("profile"))
+
+
+@app.post("/api/ambilight/controller/pc")
+async def set_ambilight_controller_pc(data: dict = Body(...)):
+    from backend.controllers.ambilight_control import set_pc, sync_pc_from_ha
+
+    if "auto_sync" in data:
+        return sync_pc_from_ha(bool(data.get("auto_sync")), int(data.get("auto_led_scale_pct", 30)))
+    return set_pc(data.get("mode", "manual_high"), data.get("auto_led_scale_pct"))
+
+
+@app.post("/api/ambilight/controller/sync-service")
+async def control_ambilight_sync_service(data: dict = Body(...)):
+    from backend.controllers.ambilight_control import request_sync_restart
+
+    return request_sync_restart(data.get("action", "restart"))
 
 
 @app.websocket("/ws")
