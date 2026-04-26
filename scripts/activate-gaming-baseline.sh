@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BACKUP_ROOT="/home/yaniss/projects/dashboard/backups/hyte-dualx-disabled"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BACKUP_ROOT="${HYTE_BACKUP_ROOT:-$REPO_ROOT/backups/hyte-dualx-disabled}"
 RESTART_GDM=0
 
 if [[ "${1:-}" == "--restart-gdm" ]]; then

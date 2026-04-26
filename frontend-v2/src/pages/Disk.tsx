@@ -39,8 +39,9 @@ function crumbs(p: string): { label: string; path: string }[] {
 }
 
 export const Disk: Component = () => {
-  const [path, setPath] = createSignal("/home/yaniss");
-  const [data] = createResource(path, (p) => apiGet<TreeResponse>(`/api/disk/tree?path=${encodeURIComponent(p)}`));
+  // Empty initial path → backend resolves to the user's home directory.
+  const [path, setPath] = createSignal("");
+  const [data] = createResource(path, (p) => apiGet<TreeResponse>(`/api/disk/tree${p ? `?path=${encodeURIComponent(p)}` : ""}`));
 
   const navigate = (entry: Entry): void => {
     if (entry.is_dir) setPath(entry.path);

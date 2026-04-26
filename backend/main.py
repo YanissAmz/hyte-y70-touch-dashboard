@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.responses import FileResponse
@@ -266,8 +267,10 @@ async def launch_app(data: dict = Body(...)):
 
 
 @app.get("/api/disk/tree")
-async def disk_tree(path: str = "/home/yaniss"):
+async def disk_tree(path: str | None = None):
     from backend.controllers.disk import tree
+    if path is None:
+        path = str(Path.home())
     return await tree(path)
 
 

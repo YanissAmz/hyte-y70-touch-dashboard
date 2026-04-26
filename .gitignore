@@ -9,3 +9,9 @@ __pycache__/
 .chromium-data/
 wallpapers/current.png
 backups/
+
+# Personal docs not for public release (kept locally)
+HANDOFF-*.md
+MARKET_RESEARCH.md
+TODO.md
+README-v2.md
