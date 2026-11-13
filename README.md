@@ -113,6 +113,11 @@ that if your setup is reversed.
 
 ## Quick start
 
+Prerequisites:
+
+- Python 3.13 with the `venv` module. On Debian / Ubuntu it is a separate package: `sudo apt install python3-venv` (or `python3.13-venv`). Without it, `python3 -m venv` fails with "ensurepip is not available", and the next `pip install` then hits "externally-managed-environment".
+- Node.js 20 or newer (Tailwind CSS 4 needs it). With Node 18 the frontend build fails with "Cannot find native binding". After upgrading Node, delete `frontend-v2/node_modules` and `frontend-v2/package-lock.json`, then run `npm install` again.
+
 ```bash
 git clone https://github.com/YanissAmz/hyte-y70-touch-dashboard.git
 cd hyte-y70-touch-dashboard
